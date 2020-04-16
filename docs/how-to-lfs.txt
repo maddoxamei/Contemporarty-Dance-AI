@@ -1,0 +1,7 @@
+Navigate to https://git-lfs.github.com/
+Download/Install latest version
+
+Run in Git repository folder
+git lfs install
+git lfs track "*.<file-extension>"
+git add .gitattributes
