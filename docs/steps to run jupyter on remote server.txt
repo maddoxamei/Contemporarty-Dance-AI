@@ -1,0 +1,7 @@
+** open terminal **
+ssh <remote_user>@<remote_server>
+cd <directory>
+jupyter lab --no-browser --port=<port_number>
+
+** open new terminal **
+ssh -N -L <port_number>:localhost:<port_number> <remote_user>@<remote_server>
