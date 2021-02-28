@@ -186,12 +186,12 @@ def get_processed_data(csv_filename, np_filename, training_split):
     #If the corresponding numpy file doesn't yet exist, create and save it
     if not (os.path.exists(np_filename+".npy")):
         #Print statement for status update
-        print("Creating pre-processed datafile:", np_filename)
+        #print("Creating pre-processed datafile:", np_filename)
         #load the csv file and establish the number of rows and columns
         data = pre_process_data(csv_filename, training_split)
         #data = data.iloc[:].values #Enables selection/edit of cells in the pandas dataframe
         np.save(np_filename, data)
-        print("Saved the pre-processed data to\n\t", np_filename)
+        #print("Saved the pre-processed data to\n\t", np_filename)
 
     return np.load(np_filename+".npy")
 
@@ -329,7 +329,7 @@ def get_sample_data(csv_filename, np_filename, look_back, offset, forecast, samp
             os.path.exists(evaluation_save_X+".npy") and 
             os.path.exists(evaluation_save_Y+".npy")):
         # Print statement for status update
-        print("Creating the sequenced data:", np_filename)
+        #print("Creating the sequenced data:", np_filename)
         
         # Preprocess the data, then split it into train, validation, and evaluation datasets
         data = get_processed_data(csv_filename, np_filename, training_split)
@@ -346,6 +346,6 @@ def get_sample_data(csv_filename, np_filename, look_back, offset, forecast, samp
         np.save(validation_save_Y, validate_Y)
         np.save(evaluation_save_X, evaluation_X)
         np.save(evaluation_save_Y, evaluation_Y)
-        print("Saved the sequenced data to\n\t", np_filename)
+        #print("Saved the sequenced data to\n\t", np_filename)
 
     return np.load(training_save_X+".npy"), np.load(training_save_Y+".npy"), np.load(validation_save_X+".npy"), np.load(validation_save_Y+".npy"), np.load(evaluation_save_X+".npy"), np.load(evaluation_save_Y+".npy")

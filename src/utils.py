@@ -14,8 +14,8 @@ from utils_data import *
 from utils_model import *
 
 def write(output="", file=sys.stdout):
-    file.write("\n")
     file.write(output)
+    file.write("\n")
     file.flush()
     
 def progressbar(it, prefix="", size=60, file=sys.stdout):
