@@ -27,7 +27,10 @@ def reload_packages():
 # 
 # *Each dance is recorded and labeled with an emotion*. This emotion tag was significant in determining sentiment (attitude) later.
 # 
-# **File Conversion CSV**\
+# **Data Exploration**\
+# [bvh](https://pypi.org/project/bvh/) is a useful tool for exploring motion file data from BVH files through code without any data conversion
+# 
+# **File Conversion**\
 # [bvhtoolbox][2] and [bvh-converter][3] were used for the conversion process.
 # 
 # **BVH to CSV**\
@@ -143,14 +146,14 @@ def train_generator(out_file=sys.stdout):
     utils.write(generator.model_summary(model), out_file)
     return generator.train_model(model, out_file)
 
-def evaluate_generator(model, save_location, out_file):
+def evaluate_generator(model, eval_X, eval_Y, save_location, out_file):
     if(not model):
         #loads the most recent saved model
         filename = [f for f in os.listdir(logs_save_dir) if "model" in f][-1]
         model = generator.load_trained_model(os.path.join(save_location, filename))
         utils.write(generator.model_summary(model), out_file)
-        eval_X = np.load(os.path.join(np_save_dir, "_comprehensive_evaluation_"+data_identifier+"_es-{}".format(evaluation_split)+"_X.npy"))
-        eval_Y = np.load(os.path.join(np_save_dir, "_comprehensive_evaluation_"+data_identifier+"_es-{}".format(evaluation_split)+"_Y.npy"))
+        eval_X = np.load(evaluation_filename+"_X.npy")
+        eval_Y = np.load(evaluation_filename+"_Y.npy")
     return generator.benchmark(model, eval_X, eval_Y, out_file)
     
 def choreograph_dance(model, save_location, out_file):
@@ -182,6 +185,8 @@ def plot_training_history(history, title):
     
     figure.legend(labels=['train', 'validation'], loc="upper right")
     figure.align_ylabels()
+    
+    figure.savefig('../graphics/generator/training_history.png', dpi = 500, transparent=True) #untested
 
 
 # # Run Script
@@ -203,13 +208,13 @@ def main(save_location, out_file=sys.stdout):
             history, model, eval_X, eval_Y = train_generator(out_file)
             plot_training_history(history.history, "Training History")
         if(args.evaluate):
-            history = evaluate_generator(model, save_location, out_file)
+            history = evaluate_generator(model, eval_X, eval_Y, save_location, out_file)
             print (history)
         if(args.predict):
             choreograph_dance(model, save_location, out_file)
         
 if __name__ == "__main__":
-    reload_packages()
+    #reload_packages()
     utils.create_dir(np_save_dir)
     save_location = utils.create_dir(logs_save_dir)
     out_file = open(os.path.join(save_location, "outfile.txt"), "w")

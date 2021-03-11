@@ -61,9 +61,8 @@ def train_model(model, out_file=sys.stdout):
                         verbose=1)
     
     save_trained_model(model, logs_save_dir, full_identifier)
-    evaluation_save = os.path.join(np_save_dir, "_comprehensive_evaluation_"+data_identifier+"_es-{}".format(evaluation_split))
-    np.save(evaluation_save+"_X", comprehensive_evaluation_X)
-    np.save(evaluation_save+"_Y", comprehensive_evaluation_Y)
+    np.save(global_variables.evaluation_filename+"_X", comprehensive_evaluation_X)
+    np.save(global_variables.evaluation_filename+"_Y", comprehensive_evaluation_Y)
     history_filepath = os.path.join(logs_save_dir, "history_train_"+full_identifier+".json")
     with open(history_filepath, "w") as history_file:  
         json.dump(pd.DataFrame.from_dict(history.history).to_dict(), history_file) 
@@ -125,9 +124,8 @@ def train_mini(model, out_file=sys.stdout):
                         verbose=1)
     
     save_trained_model(model, logs_save_dir, full_identifier)
-    evaluation_save = os.path.join(np_save_dir, "_comprehensive_evaluation_"+data_identifier+"_es-{}".format(evaluation_split))
-    np.save(evaluation_save+"_X", comprehensive_evaluation_X)
-    np.save(evaluation_save+"_Y", comprehensive_evaluation_Y)
+    np.save(global_variables.evaluation_filename+"_X", comprehensive_evaluation_X)
+    np.save(global_variables.evaluation_filename+"_Y", comprehensive_evaluation_Y)
     history_filepath = os.path.join(logs_save_dir, "history_train_"+full_identifier+".json")
     with open(history_filepath, "w") as history_file:  
         json.dump(pd.DataFrame.from_dict(history.history).to_dict(), history_file) 

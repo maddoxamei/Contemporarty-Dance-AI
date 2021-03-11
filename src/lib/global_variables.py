@@ -52,3 +52,5 @@ logs_save_dir = os.path.join(logs_dir, model_identifier) #output directory for m
 checkpoint_filename = "weights_{}_".format(look_back)+full_identifier+"_epoch-{epoch:02d}_loss-{loss:.2f}_acc-{accuracy:.2f}_val-loss-{val_loss:.2f}_val-acc-{val_accuracy:.2f}.h5"
 checkpoint_filepath = os.path.join(logs_save_dir, checkpoint_filename)
 architecture_filepath = os.path.join(logs_save_dir, "model-architecture_"+model_identifier+".h5")
+
+evaluation_filename = os.path.join(np_save_dir, "_comprehensive_evaluation_"+data_identifier+"_es-{}".format(evaluation_split))
