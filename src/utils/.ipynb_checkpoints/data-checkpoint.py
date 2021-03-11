@@ -1,5 +1,6 @@
 from lib.data_dependencies import *
 from lib.general_dependencies import *
+from lib import global_variables
 
 def _relativize_data(data):
     """ Linearly transform the data such that each frame represents the "change" from the previous frame.   
@@ -76,7 +77,7 @@ def _pre_process_rot_data(rotation_df, training_split, standard_method):
     :rtype: pandas.DataFrame
     """
     if standard_method:
-        with open('../../bin/rotational_standardization_metrics.json', 'r') as f:
+        with open(os.path.join(global_variables.logs_dir,'rotational_standardization_metrics.json'), 'r') as f:
             metrics_dict = f.read()
         metrics_dict = json.loads(metrics_dict)[str(training_split)]
         metrics_df = pd.DataFrame.from_dict(metrics_dict)
@@ -105,7 +106,7 @@ def _post_process_rot_data(rotation_df, training_split, standard_method):
     :rtype: pandas.DataFrame
     """
     if standard_method:
-        with open('../../bin/rotational_standardization_metrics.json', 'r') as f:
+        with open(os.path.join(global_variables.logs_dir,'rotational_standardization_metrics.json'), 'r') as f:
             metrics_dict = f.read()
         metrics_dict = json.loads(metrics_dict)[str(training_split)]
         metrics_df = pd.DataFrame.from_dict(metrics_dict)
