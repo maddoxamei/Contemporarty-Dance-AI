@@ -10,16 +10,6 @@ from lib import * #import dependancies and global_variables
 import classifier, generator, utils #import packages cooresponding to the classification and dance generation aspects and the data/misc helper functions, respectively
 
 
-# In[2]:
-
-
-from importlib import reload
-def reload_packages():
-    reload(classifier)
-    reload(generator)
-    reload(utils)
-
-
 # # Data
 # 
 # **Aquisition**\
@@ -53,23 +43,19 @@ def reload_packages():
 # Most variables are stored in the lib package and are global in nature.\
 # The following two segments are for determining what to run in the **notebook** and cooresponding **python file**, *respectively*.
 
-# In[9]:
+# In[2]:
 
 
 # Run in Jupyter Notebook
 class Args():
     def __init__(self):
-        self.train = False
+        self.train = True
+        self.evaluate = True
         self.predict = True
-        self.evaluate = False
 args = Args()
 
-
-# In[4]:
-
-
-""" Do NOT run in Jupyter Notebook, otherwise will recieve error
-    This allows you to determine what to run when running the file in the command line
+""" This block is un-runnable in the Jupyter Notebook. Do NOT change this to a code block, otherwise an error will be thrown
+    This allows you to determine what to run when running the file in the command line as a python script
 """
 parser = argparse.ArgumentParser()
 
@@ -83,8 +69,6 @@ parser.add_argument('--predict', action="store_true",
                    help='Generate a dance using the trained model')
 
 args = parser.parse_args()
-
-
 # # Major Imported Function Descriptions
 
 # **General**
@@ -123,12 +107,14 @@ args = parser.parse_args()
 # &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The History object's History.history attribute is a record of training loss values and metrics values at successive epochs, as well as cooresponding validation values (if applicable).\
 # &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Returns the class containing the training metric information, the trained model, and the comprehensive evaluation data as a *tuple* \
 # `generator.benchmark(model, eval_X, eval_Y, out_file)`\
+# &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Runs the evaluation data through the model to obtain the overall metrics on data the model did not train on\
+# &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Returns the training metric information as a *dict* \
 # `generator.generate_dance(model, frames, out_file = out_file)`\
 # &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Generate a dance sequence with the given model
 
 # # AI Functions
 
-# In[5]:
+# In[3]:
 
 
 def train_generator(out_file=sys.stdout):
@@ -142,56 +128,36 @@ def train_generator(out_file=sys.stdout):
     :type tuple
     """
     model = generator.establish_model(units, look_back, n_features, layer_activation, recurrent_activation, weight_initializer, recurrent_initializer, bias_initializer, output_activation)
-    model = generator.compile_model(model, optimizer, loss_function)
+    generator.save_architecture(model, architecture_file)
+    model = generator.compile_model(model, optimizer, loss_function, metrics)
     utils.write(generator.model_summary(model), out_file)
+    print(generator.model_summary(model))
     return generator.train_model(model, out_file)
 
 def evaluate_generator(model, eval_X, eval_Y, save_location, out_file):
     if(not model):
-        #loads the most recent saved model
-        filename = [f for f in os.listdir(logs_save_dir) if "model" in f][-1]
-        model = generator.load_trained_model(os.path.join(save_location, filename))
+        #loads the "best" model
+        model = generator.load_trained_model(architecture_file, logs_save_dir)
+        model = generator.compile_model(model, optimizer, loss_function, metrics)
         utils.write(generator.model_summary(model), out_file)
-        eval_X = np.load(evaluation_filename+"_X.npy")
-        eval_Y = np.load(evaluation_filename+"_Y.npy")
+        print(generator.model_summary(model))
+        eval_X = np.load(evaluation_filepath+"_X.npy")
+        eval_Y = np.load(evaluation_filepath+"_Y.npy")
     return generator.benchmark(model, eval_X, eval_Y, out_file)
     
 def choreograph_dance(model, save_location, out_file):
     if(not model):
-        #loads the most recent saved model
-        filename = [f for f in os.listdir(logs_save_dir) if "model" in f][-1]
-        model = generator.load_trained_model(os.path.join(save_location, filename))
+        #loads the "best" model
+        model = generator.load_trained_model(architecture_file, logs_save_dir)
+        model = generator.compile_model(model, optimizer, loss_function, metrics)
         utils.write(generator.model_summary(model), out_file)
+        print(generator.model_summary(model))
     generator.generate_dance(model, frames, out_file = out_file)
-
-
-# In[10]:
-
-
-def plot_training_history(history, title):
-    # summarize history for loss
-    figure, (axis1, axis2) = plt.subplots(2, 1, sharex=True) 
-    
-    axis1.plot(history['loss'], label='train') 
-    axis1.plot(history['val_loss'], label='validation')
-    axis1.set_ylabel('Loss')#, labelpad=25
-    
-    axis2.plot(history['accuracy'], label='train') 
-    axis2.plot(history['val_accuracy'], label='validation')
-    axis2.set_ylabel('Accuracy')#, labelpad=25
-    
-    axis1.set_title(title) 
-    axis2.set_xlabel('Epoch')#, labelpad=25
-    
-    figure.legend(labels=['train', 'validation'], loc="upper right")
-    figure.align_ylabels()
-    
-    figure.savefig('../graphics/generator/training_history.png', dpi = 500, transparent=True) #untested
 
 
 # # Run Script
 
-# In[11]:
+# In[4]:
 
 
 def main(save_location, out_file=sys.stdout):
@@ -205,16 +171,17 @@ def main(save_location, out_file=sys.stdout):
         print("Type -h and get a list of possible tasks. You may select multiple.")
     else:
         if(args.train):
-            history, model, eval_X, eval_Y = train_generator(out_file)
-            plot_training_history(history.history, "Training History")
+            History, model, eval_X, eval_Y = train_generator(out_file)
+            utils.plot_history_individual(History.history, 'Training History', 'train', graphics_dir, save_figure=True)
+            utils.plot_history_grouped(History.history, 'Training History (Group {})', graphics_dir, save_figures=True)
         if(args.evaluate):
-            history = evaluate_generator(model, eval_X, eval_Y, save_location, out_file)
-            print (history)
+            _hist, _model = evaluate_generator(model, eval_X, eval_Y, save_location, out_file)
+            history = _hist
+            model = _model
         if(args.predict):
             choreograph_dance(model, save_location, out_file)
         
 if __name__ == "__main__":
-    #reload_packages()
     utils.create_dir(np_save_dir)
     save_location = utils.create_dir(logs_save_dir)
     out_file = open(os.path.join(save_location, "outfile.txt"), "w")

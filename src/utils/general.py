@@ -1,5 +1,5 @@
 from lib.general_dependencies import *
-from lib import global_variables
+from lib.global_variables import csv_data_dir, np_save_dir, np_file_suffix
 
 def write(output="", file=sys.stdout):
     """ Display a string to an output stream. This allows for status updates to be outputted to a file. Default is a console log.
@@ -16,6 +16,11 @@ def write(output="", file=sys.stdout):
 def json_to_file(filepath, json_object):
     with open(filepath, "w") as file:  
         json.dump(json_object, file) 
+        
+def json_from_file(json_file):
+    with open(json_file, "r") as file:  
+        json_info = file.read()
+    return json.loads(json_info)
     
 def progressbar(it, prefix="", size=60, file=sys.stdout):
     """ Create a visualization of a progress bar updates according to completion status
@@ -76,6 +81,6 @@ def get_save_path(filename):
     :return: the csv and numpy save filepaths
     :rtype: tuple
     """
-    csv_filename = os.path.join(global_variables.csv_data_dir, filename)
-    np_filename = os.path.join(global_variables.np_save_dir, filename+"_"+global_variables.data_identifier+"_ts-{}".format(global_variables.training_split))
+    csv_filename = os.path.join(csv_data_dir, filename)
+    np_filename = os.path.join(np_save_dir, filename+np_file_suffix)
     return csv_filename, np_filename

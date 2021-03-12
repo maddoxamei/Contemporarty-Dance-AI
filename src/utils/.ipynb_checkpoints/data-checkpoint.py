@@ -1,6 +1,6 @@
 from lib.data_dependencies import *
 from lib.general_dependencies import *
-from lib import global_variables
+from lib.global_variables import standardization_json, vertical_spacial_axis
 
 def _relativize_data(data):
     """ Linearly transform the data such that each frame represents the "change" from the previous frame.   
@@ -32,34 +32,48 @@ def _un_relativize_data(data):
             data.iloc[index] = row + data.iloc[index-1]
     return data
 
-def _pre_process_pos_data(position_df):
-    """ Alter the position data such that the X-Z horizontal planar movement is relative and the Y (verticle axis) remains global
+def _pre_process_pos_data(position_df, vertical_axis = None):
+    """ Alter the position data such that the horizontal planar movement is relative and the verticle axis remains global
     
     :param position_df: Hips.X, Hips.Y, and Hips.Z position data
     :type pandas.DataFrame
+    :param vertical_axis: the header cooresponding to the verticle axis (either X, Y, Z)
+    :type char
     :return: dataframe that contains the altered hip positions
     :rtype: pandas.DataFrame
     """
-    vertical_movement = position_df.pop('Hips.Y')
-    position_df = _relativize_data(position_df)
-    position_df['Hips.Y'] = vertical_movement
+    if(vertical_axis):
+        vertical_movement = position_df.pop('Hips.'+vertical_axis)
+        position_df = _relativize_data(position_df)
+        position_df['Hips.'+vertical_axis] = vertical_movement
+    else:
+        position_df = _relativize_data(position_df)
     return position_df
 
-def _post_process_pos_data(position_df, hierarchy_df):
-    """ Alter the position data such that the X-Z horizontal planar movement is global, making all position channels dimensions global
+def _post_process_pos_data(position_df, hierarchy_df, vertical_axis = None):
+    """ Alter the position data such that the horizontal planar movement is global, making all position channel dimensions global
     
     :param position_df: Hips.X, Hips.Y, and Hips.Z position data
     :type pandas.DataFrame
     :param hierarchy: joint offset data (must include Hips.X, Hips.Y, and Hips.Z )
     :type pandas.DataFrame
+    :param vertical_axis: the header cooresponding to the verticle axis (either X, Y, Z)
+    :type char
     :return: dataframe that contains the altered hip positions
     :rtype: pandas.DataFrame
     """
-    vertical_movement = position_df.pop('Hips.Y')
-    position_df = _un_relativize_data(position_df)
-    position_df['Hips.Y'] = vertical_movement
-    position_df['Hips.X'] = position_df['Hips.X'] + hierarchy_df['offset.x'][0]
-    position_df['Hips.Z'] = position_df['Hips.Z'] + hierarchy_df['offset.z'][0]
+    if(vertical_axis):
+        vertical_movement = position_df.pop('Hips.'+vertical_axis)
+        position_df = _un_relativize_data(position_df)
+        position_df['Hips.'+vertical_axis] = vertical_movement
+    else:
+        position_df = _un_relativize_data(position_df)
+    #re-centers the position data using the given hierarchal offset
+    position_df['Hips.X'] += hierarchy_df['offset.x'][0]
+    position_df['Hips.Y'] += hierarchy_df['offset.y'][0]
+    position_df['Hips.Z'] += hierarchy_df['offset.z'][0]
+    if(vertical_axis):
+        position_df['Hips.'+vertical_axis] -= hierarchy_df['offset.'+vertical_axis.lower()][0]
     return position_df
     
 def _pre_process_rot_data(rotation_df, training_split, standard_method):
@@ -77,7 +91,7 @@ def _pre_process_rot_data(rotation_df, training_split, standard_method):
     :rtype: pandas.DataFrame
     """
     if standard_method:
-        with open(os.path.join(global_variables.logs_dir,'rotational_standardization_metrics.json'), 'r') as f:
+        with open(standardization_json, 'r') as f:
             metrics_dict = f.read()
         metrics_dict = json.loads(metrics_dict)[str(training_split)]
         metrics_df = pd.DataFrame.from_dict(metrics_dict)
@@ -106,7 +120,7 @@ def _post_process_rot_data(rotation_df, training_split, standard_method):
     :rtype: pandas.DataFrame
     """
     if standard_method:
-        with open(os.path.join(global_variables.logs_dir,'rotational_standardization_metrics.json'), 'r') as f:
+        with open(standardization_json, 'r') as f:
             metrics_dict = f.read()
         metrics_dict = json.loads(metrics_dict)[str(training_split)]
         metrics_df = pd.DataFrame.from_dict(metrics_dict)
@@ -138,7 +152,7 @@ def _pre_process_data(csv_filename, training_split, standard_method):
     # Standardize rotation (center the values around zero)
     data = _pre_process_rot_data(rotation_df.copy(), training_split, standard_method)
     # Relativize the horizontal planer position movement
-    position_df = _pre_process_pos_data(position_df)
+    position_df = _pre_process_pos_data(position_df, vertical_spacial_axis)
     
     # Remove the all the columns were it's all zeroed (End ones)
     zeroed_columns = [column for column in data.columns if 'End' in column]
@@ -173,7 +187,7 @@ def _post_process_data(rotation_df, position_df, hierarchy_df, training_split, s
     """
     #undo the normalization and standardization of the data
     rotation_df = _post_process_rot_data(rotation_df, training_split, standard_method)
-    position_df = _post_process_pos_data(position_df, hierarchy_df)
+    position_df = _post_process_pos_data(position_df, hierarchy_df, vertical_spacial_axis)
     
     new_headers = []
     joints = [j for j in hierarchy_df['joint'].to_numpy() if "End" not in j]

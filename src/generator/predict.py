@@ -2,7 +2,7 @@ from lib.generator_dependencies import *
 from lib.general_dependencies import *
 from .model_helper import *
 from utils import *
-from lib.global_variables import *
+from lib.global_variables import training_split, convensional_method, history_eval_file, logs_save_dir, look_back
 from .custom_callback import *
 
     
@@ -21,13 +21,24 @@ def _save_generated_dance(generated_data, original_filename, save_filename):
     c_headers = [c for c in original_data.columns if 'End' not in c ][1:]
     save_generated_dance(generated_data, training_split, hierarchy_file, c_headers, save_filename, convensional_method)  
 
-def benchmark(model, eval_X = None, eval_Y = None, out_file=sys.stdout):
+def benchmark(model, eval_X, eval_Y, out_file=sys.stdout):
+    """ Runs the evaluation data through the model to obtain the overall metrics on data the model did not train on
+
+    :param model
+    :type numpy.Array
+    :param eval_X
+    :type str
+    :param save_filename: the directory and filename to store the generated dance at
+    :type str
+    :return: the training metric information (dict) and the model instance
+    :type tuple
+    """
     history = model.evaluate(eval_X, eval_Y, callbacks=[CustomCallback(out_file)], verbose=1, return_dict=True)
-    history_filepath = os.path.join(logs_save_dir, "history_eval_"+full_identifier+".json")
-    with open(history_filepath, "w") as history_file:  
+    with open(history_eval_file, "w") as history_file:  
         json.dump(history, history_file) 
-    write("Saved evaluation metric history to json file:\n\t"+history_filepath, out_file)
-    return history
+    write("Saved evaluation metric history to json file:\n\t"+history_eval_file, out_file)
+    print("Saved evaluation metric history to json file:\n\t"+history_eval_file)
+    return history, model
 
 def generate_dance(model, n_frames, random_frame=False, out_file=sys.stdout):
     """ Generate a dance sequence with the given model

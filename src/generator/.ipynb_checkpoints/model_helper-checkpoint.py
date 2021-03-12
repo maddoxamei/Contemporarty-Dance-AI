@@ -1,4 +1,5 @@
 from lib.generator_dependencies import *
+from lib.general_dependencies import *
 
 def model_summary(model):
     """ Convert the model architecture summary to a writeable format
@@ -6,13 +7,13 @@ def model_summary(model):
     :param model: the model to display the summary of
     :type keras.Model
     :return: the visual diagram of the model
-    :type str
+    :type list
     """
     stringlist = []
     model.summary(print_fn=lambda x: stringlist.append(x))
     return "\n".join(stringlist)
     
-def compile_model(model, optimizer, loss):
+def compile_model(model, optimizer, loss, metrics):
     """ Compile the given model so that it is ready for training and/or prediction/evaluation
 
     :param model: the model to compile
@@ -20,7 +21,7 @@ def compile_model(model, optimizer, loss):
     :return: the compiled model
     :type keras.Model
     """
-    model.compile(optimizer=optimizer, loss=loss, metrics=['accuracy'])#tf.keras.metrics.MeanSquaredError(),
+    model.compile(optimizer=optimizer, loss=loss, metrics=metrics)#tf.keras.metrics.MeanSquaredError(),
     return model
 
 def save_architecture(model, out_path):
@@ -32,7 +33,7 @@ def save_architecture(model, out_path):
     :param out_path: full path (directory+filename+file-extension) to save the model architecture to
     :type str
     """
-    json_config = model.to_jason()
+    json_config = model.to_json()
     with open(out_path, "w") as file:  
         json.dump(json_config, file) 
     
@@ -51,7 +52,7 @@ def save_weights(model, out_path, save_filename):
     """
     model.save_weights(os.path.join(out_path, save_filename))
     
-def save_trained_model(model, out_dir, identifier):
+def save_model_checkpoint(model, file):
     """ Save the entire model. Model can be loaded and restart training right where you left off
         The following are saved:
             weight values
@@ -61,12 +62,10 @@ def save_trained_model(model, out_dir, identifier):
 
     :param model: the model to save
     :type keras.Model
-    :param out_dir: directory to save the model to
-    :type str
-    :param identifier: unique string for creating readily identifiable filenames based off model specs
+    :param file: the path+filename+extension to save the model to
     :type str
     """
-    model.save(os.path.join(out_dir, "model-full_"+identifier+".h5"))
+    model.save(file)
     
 def load_architecture(file):
     """ Load the architecture (layers and how they are connected*). 
@@ -78,10 +77,31 @@ def load_architecture(file):
     :return: the model's architecture
     :type keras.Model
     """
-    return keras.models.model_from_json(file)
+    with open(file, 'r') as json_file:
+        json_info = json_file.read()
+    return keras.models.model_from_json(json.loads(json_info))
 
-def load_trained_model(file):
-    """ Load the pre-trained model. Compiled when loaded so training/prediction/evaluation can be restarted right where the model left off. 
+def load_weights(model, file):
+    model.load_weights(file)
+    return model
+
+def load_trained_model(architecture_file, weights_dir):
+    """ Load the "best" model for training/prediction/evaluation. Optimizer state is NOT included so training will be "restarted"
+
+    :param file: the model's architecture
+    :type str
+    :param file: the directory storing the model's weight checkpoints
+    :type str
+    :return: the compiled model
+    :type keras.Model
+    """
+    model = load_architecture(architecture_file)
+    weight_files = [f for f in os.listdir(weights_dir) if 'weight' in f]
+    weight_files.sort()
+    return load_weights(model, os.path.join(weights_dir, weight_files[-1]))
+
+def load_model_checkpoint(file):
+    """ Load the entirety of a model (architecture, weights, training config, and optimizer state). Compiled when loaded so training/prediction/evaluation can be restarted right where the model left off. 
 
     :param file: .h5 file which holds the model's information
     :type str
