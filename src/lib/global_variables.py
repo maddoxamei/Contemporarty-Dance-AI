@@ -37,12 +37,12 @@ covariances = 5 #number of diagonal covariances
 ======= Model Runtime-parameters ========
 =========================================
 """
-epochs = 200 #maximum number of times all training samples are fed into the model for training
+epochs = 2 #maximum number of times all training samples are fed into the model for training
 #metrics=['accuracy','mean_absolute_error','mean_squared_logarithmic_error','poisson','root_mean_squared_error','hinge','kullback_leibler_divergence'] #the metrics to track during model training/evaluation
 metrics=[tf.keras.metrics.MeanAbsoluteError(), tf.keras.metrics.MeanSquaredLogarithmicError(), tf.keras.metrics.RootMeanSquaredError(), tf.keras.metrics.Hinge(), tf.keras.losses.KLDivergence(), tf.keras.metrics.MeanSquaredError()]
 stopping_patience = 20 #number of epochs with no improvement after which training will be stopped
 temperature = 1
-
+use_mdn = False
 """ 
 ===============================
 ======= Data Variables ========
@@ -85,6 +85,9 @@ _split_identifier = "ts-{}_vs-{}_es-{}".format(training_split, validation_split,
 _full_identifier = _model_identifier+"_"+_data_identifier+"_"+_split_identifier #string for use in creating readily identifiable filenames 
 _checkpoint_extension = ".h5" #file type to save the model weights as, either tensorflow's default (.ckpt) or keras's default (.h5) 
 _weights_filename = "weights_{}_".format(look_back)+_full_identifier+"_epoch-{epoch:02d}_loss-{loss:.5f}_val-loss-{val_loss:.5f}"+_checkpoint_extension #full filename to save training weights to
+_model_type = 'LSTM-RNN'
+if(use_mdn):
+    _model_type += 'MDN'
 """
     ***** Save Locations *****
 """
@@ -95,8 +98,8 @@ np_file_suffix = "_"+_data_identifier+"_ts-{}".format(training_split) #end half 
     ***** Save Files *****
 """
 weights_file = os.path.join(logs_save_dir, _weights_filename)
-architecture_file = os.path.join(logs_save_dir, "model-architecture_"+_model_identifier+".json")
-model_file = os.path.join(logs_save_dir, "model-full_"+_full_identifier+".h5")
+architecture_file = os.path.join(logs_save_dir, "model_{}_architecture_".format(_model_type)+_model_identifier+".json")
+model_file = os.path.join(logs_save_dir, "model_{}_full_".format(_model_type)+_full_identifier+".h5")
 
 evaluation_filepath = os.path.join(np_save_dir, "_comprehensive_evaluation_"+_data_identifier+"_es-{}".format(evaluation_split))
 history_train_file = os.path.join(logs_save_dir, "history_train_"+_full_identifier+".json")

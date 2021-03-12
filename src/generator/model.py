@@ -105,7 +105,7 @@ def _LSTM_RNN_MDN(units, lb, feature_size, la, ra, wi, ri, bi, oa, mixtures):
     model = keras.models.Model(inputs=input_layer, outputs=output)
     return model
 
-def establish_model(units, lb, feature_size, la, ra, wi, ri, bi, oa, mdn_layer = False, mixtures=5):
+def establish_model(units, lb, feature_size, la, ra, wi, ri, bi, oa, mixtures, mdn_layer = False):
     """ Establish the architecture (layers and how they are connected*) of the model with freshly initialized state for the weights. 
         There is NO compilation information.
 

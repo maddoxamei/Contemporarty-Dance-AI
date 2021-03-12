@@ -127,7 +127,7 @@ def train_generator(out_file=sys.stdout):
     :return: the class containing the training metric information, the trained model, and the comprehensive evaluation data
     :type tuple
     """
-    model = generator.establish_model(units, look_back, n_features, layer_activation, recurrent_activation, weight_initializer, recurrent_initializer, bias_initializer, output_activation)
+    model = generator.establish_model(units, look_back, n_features, layer_activation, recurrent_activation, weight_initializer, recurrent_initializer, bias_initializer, output_activation, mixtures, use_mdn)
     generator.save_architecture(model, architecture_file)
     model = generator.compile_model(model, optimizer, loss_function, metrics)
     utils.write(generator.model_summary(model), out_file)
