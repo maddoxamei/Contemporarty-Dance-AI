@@ -1,6 +1,30 @@
 from lib.data_dependencies import *
 from lib.general_dependencies import *
-from lib.global_variables import standardization_json, vertical_spacial_axis
+from lib.global_variables import standardization_json, vertical_spacial_axis, standardize_positions, relativize_positions
+
+def _drop_excess_features(df, axis, dropped_features = ['End', 'Time']):
+    df_features = df.index if axis==0 else df.columns
+    for feature in [f for f in df_features for remove in dropped_features if remove in f]:
+        df.drop(feature, axis=axis, inplace=True)
+    return df
+        
+def _standardize_dataset(data_df, training_split, vertical_axis = None):
+    with open(standardization_json, 'r') as f:
+        metrics_dict = f.read()
+    metrics_dict = json.loads(metrics_dict)[str(training_split)][str(vertical_axis)]
+    full_metrics_df = pd.DataFrame.from_dict(metrics_dict)
+    # yields the elements in `list_2` that are NOT in `list_1`
+    metrics_df = _drop_excess_features(full_metrics_df.copy(), 0, np.setdiff1d(full_metrics_df.index, data_df.columns))
+    return (data_df - metrics_df['mean']) / metrics_df['std']
+
+def _un_standardize_dataset(data_df, training_split, vertical_axis = None):
+    with open(standardization_json, 'r') as f:
+        metrics_dict = f.read()
+    metrics_dict = json.loads(metrics_dict)[str(training_split)][str(vertical_axis)]
+    full_metrics_df = pd.DataFrame.from_dict(metrics_dict)
+    # yields the elements in `list_2` that are NOT in `list_1`
+    metrics_df = _drop_excess_features(full_metrics_df.copy(), 0, np.setdiff1d(full_metrics_df.index, data_df.columns))
+    return (data_df * metrics_df['std']) + metrics_df['mean']
 
 def _relativize_data(data):
     """ Linearly transform the data such that each frame represents the "change" from the previous frame.   
@@ -32,81 +56,87 @@ def _un_relativize_data(data):
             data.iloc[index] = row + data.iloc[index-1]
     return data
 
-def _pre_process_pos_data(position_df, vertical_axis = None):
+def _pre_process_pos_data(position_df, relativize, standardize, training_split, vertical_axis = None):
     """ Alter the position data such that the horizontal planar movement is relative and the verticle axis remains global
     
     :param position_df: Hips.X, Hips.Y, and Hips.Z position data
     :type pandas.DataFrame
-    :param vertical_axis: the header cooresponding to the verticle axis (either X, Y, Z)
+    :param training_split: the proportion of the data to use for training
+    :type float
+    :param standardize: whether or not the position data should be standardized
+    :type bool
+    :param vertical_axis: the header cooresponding to the verticle axis (either X, Y, Z) or None
     :type char
     :return: dataframe that contains the altered hip positions
     :rtype: pandas.DataFrame
     """
-    if(vertical_axis):
-        vertical_movement = position_df.pop('Hips.'+vertical_axis)
-        position_df = _relativize_data(position_df)
-        position_df['Hips.'+vertical_axis] = vertical_movement
-    else:
-        position_df = _relativize_data(position_df)
+    c_headers = ['.'.join(c.split('.')[0:1]+['Pos']+c.split('.')[1:2]) if 'Pos' not in c else c for c in position_df.columns]
+    prefix = '.'.join(position_df.columns[0].split('.')[:-1]+[""])
+    if(relativize):
+        if(vertical_axis):
+            vertical_movement = position_df.pop(prefix+vertical_axis)
+            position_df = _relativize_data(position_df)
+            position_df[prefix+vertical_axis] = vertical_movement
+        else:
+            position_df = _relativize_data(position_df)
+    if(standardize):
+        position_df = _standardize_dataset(position_df, training_split, vertical_axis)
     return position_df
 
-def _post_process_pos_data(position_df, hierarchy_df, vertical_axis = None):
+def _post_process_pos_data(position_df, hierarchy_df, relativized, standardized, training_split, vertical_axis = None):
     """ Alter the position data such that the horizontal planar movement is global, making all position channel dimensions global
     
     :param position_df: Hips.X, Hips.Y, and Hips.Z position data
     :type pandas.DataFrame
     :param hierarchy: joint offset data (must include Hips.X, Hips.Y, and Hips.Z )
     :type pandas.DataFrame
-    :param vertical_axis: the header cooresponding to the verticle axis (either X, Y, Z)
+    :param standardized: whether or not the position data should be standardized
+    :type bool
+    :param vertical_axis: the header cooresponding to the verticle axis (either X, Y, Z) or None
+    :type char
+    :param training_split: the proportion of the data to use for training
+    :type float: the header cooresponding to the verticle axis (either X, Y, Z)
     :type char
     :return: dataframe that contains the altered hip positions
     :rtype: pandas.DataFrame
     """
-    if(vertical_axis):
-        vertical_movement = position_df.pop('Hips.'+vertical_axis)
-        position_df = _un_relativize_data(position_df)
-        position_df['Hips.'+vertical_axis] = vertical_movement
-    else:
-        position_df = _un_relativize_data(position_df)
-    #re-centers the position data using the given hierarchal offset
-    position_df['Hips.X'] += hierarchy_df['offset.x'][0]
-    position_df['Hips.Y'] += hierarchy_df['offset.y'][0]
-    position_df['Hips.Z'] += hierarchy_df['offset.z'][0]
-    if(vertical_axis):
-        position_df['Hips.'+vertical_axis] -= hierarchy_df['offset.'+vertical_axis.lower()][0]
-    return position_df
+    c_headers = ['.'.join(c.split('.')[0:1]+['Pos']+c.split('.')[1:2]) if 'Pos' not in c else c for c in position_df.columns]
+    prefix = '.'.join(position_df.columns[0].split('.')[:-1]+[""])
+    if(standardized):
+        position_df = _un_standardize_dataset(position_df, training_split, vertical_axis)
+    if(relativized):
+        if(vertical_axis):
+            vertical_movement = position_df.pop(prefix+vertical_axis)
+            position_df = _un_relativize_data(position_df)
+            position_df[prefix+vertical_axis] = vertical_movement
+        else:
+            position_df = _un_relativize_data(position_df)
     
-def _pre_process_rot_data(rotation_df, training_split, standard_method):
+    return position_df
+
+def _pre_process_rot_data(rotation_df, standard_method, training_split, vertical_axis = None):
     """ Standardizes the rotational dataset values.
         Standard method by mean subtraction and division by the standard deviation along each dimension. This will center the values around zero.
         Unconvensional method by dividing by 180 as all rotational values are constrained between -180 and 180
     
     :param rotation_df: the data containing the rotational channels of the dance frames
     :type pandas.DataFrame
-    :param training_split: the proportion of the data to use for training
-    :type float
     :param standard_method: whether or not the rotational dataset should be standardized by convensional methods
     :type bool
+    :param training_split: the proportion of the data to use for training
+    :type float
+    :param vertical_axis: the header cooresponding to the verticle axis (either X, Y, Z) or None
+    :type char
     :return: the standardized rotational dance frames
     :rtype: pandas.DataFrame
     """
     if standard_method:
-        with open(standardization_json, 'r') as f:
-            metrics_dict = f.read()
-        metrics_dict = json.loads(metrics_dict)[str(training_split)]
-        metrics_df = pd.DataFrame.from_dict(metrics_dict)
-        # Remove the all the columns were it's all zeroed (End ones)
-        end_joint_rows = [row for row in metrics_df.index.values if 'End' in row]
-        for row in end_joint_rows:
-            metrics_df = metrics_df.drop(row, axis=0)
-        metrics_df = metrics_df.drop('Time', axis=0)
-        rotation_df = (rotation_df - metrics_df['mean']) / metrics_df['std']
+        rotation_df = _standardize_dataset(rotation_df, training_split, vertical_axis)
     else:
         rotation_df = rotation_df/180
     return rotation_df
-        
 
-def _post_process_rot_data(rotation_df, training_split, standard_method):
+def _post_process_rot_data(rotation_df, standard_method, training_split, vertical_axis = None):
     """ Undoes the transformations during the rotational data standardization process.
         Values will no longer be centered around 0.
     
@@ -116,22 +146,15 @@ def _post_process_rot_data(rotation_df, training_split, standard_method):
     :type float
     :param standard_method: whether or not the rotational dataset should be standardized by convensional methods
     :type bool
+    :param vertical_axis: the header cooresponding to the verticle axis (either X, Y, Z) or None
+    :type char
     :return: the un-standardized rotational dance frames
     :rtype: pandas.DataFrame
     """
     if standard_method:
-        with open(standardization_json, 'r') as f:
-            metrics_dict = f.read()
-        metrics_dict = json.loads(metrics_dict)[str(training_split)]
-        metrics_df = pd.DataFrame.from_dict(metrics_dict)
-        # Remove the all the columns were it's all zeroed (End ones)
-        end_joint_rows = [row for row in metrics_df.index.values if 'End' in row]
-        for row in end_joint_rows:
-            metrics_df = metrics_df.drop(row, axis=0)
-        metrics_df = metrics_df.drop('Time', axis=0)
-        rotation_df = (rotation_df * metrics_df['std']) + metrics_df['mean']
+        rotation_df = _un_standardize_dataset(rotation_df, training_split, vertical_axis)
     else:
-        rotation_df = rotation_df*180
+        rotation_df *= 180
     return rotation_df
 
 def _pre_process_data(csv_filename, training_split, standard_method):
@@ -149,23 +172,17 @@ def _pre_process_data(csv_filename, training_split, standard_method):
     position_df = pd.read_csv(csv_filename+"_worldpos.csv", usecols=['Hips.X','Hips.Y','Hips.Z'])
     rotation_df = pd.read_csv(csv_filename+"_rotations.csv")
     
-    # Standardize rotation (center the values around zero)
-    data = _pre_process_rot_data(rotation_df.copy(), training_split, standard_method)
+    data = _pre_process_rot_data(rotation_df.copy(), standard_method, training_split, vertical_spacial_axis)
     # Relativize the horizontal planer position movement
-    position_df = _pre_process_pos_data(position_df, vertical_spacial_axis)
+    position_df = _pre_process_pos_data(position_df, relativize_positions, standardize_positions, training_split, vertical_spacial_axis)
     
-    # Remove the all the columns were it's all zeroed (End ones)
-    zeroed_columns = [column for column in data.columns if 'End' in column]
-    for column in zeroed_columns:
-        data.pop(column)
+    # Remove the all the features which aren't all zeros and the time feature from the dataset
+    _drop_excess_features(data, 1)
     
     # Add the root (hip) data for spacial movement
     data['Hips.Pos.X'] = position_df.pop('Hips.X')
     data['Hips.Pos.Y'] = position_df.pop('Hips.Y')
     data['Hips.Pos.Z'] = position_df.pop('Hips.Z')
-
-    # Remove the time variable from the dataset
-    time = data.pop('Time') #maybe change to time change value instead? To indicate speed
     return data
 
 def _post_process_data(rotation_df, position_df, hierarchy_df, training_split, standard_method):
@@ -186,8 +203,8 @@ def _post_process_data(rotation_df, position_df, hierarchy_df, training_split, s
     :rtype: tuple
     """
     #undo the normalization and standardization of the data
-    rotation_df = _post_process_rot_data(rotation_df, training_split, standard_method)
-    position_df = _post_process_pos_data(position_df, hierarchy_df, vertical_spacial_axis)
+    rotation_df = _post_process_rot_data(rotation_df, standard_method, training_split, vertical_spacial_axis)
+    position_df = _post_process_pos_data(position_df, hierarchy_df, relativize_positions, standardize_positions, training_split, vertical_spacial_axis)
     
     new_headers = []
     joints = [j for j in hierarchy_df['joint'].to_numpy() if "End" not in j]
@@ -198,8 +215,9 @@ def _post_process_data(rotation_df, position_df, hierarchy_df, training_split, s
 
     rotation_df = rotation_df.reindex(columns=new_headers)  
     
-    rotation_df.insert(0, 'time', np.arange(0.0, 0.03333333*len(rotation_df), 0.03333333))
-    position_df.insert(0, 'time', np.arange(0.0, 0.03333333*len(position_df), 0.03333333))
+    rotation_df.insert(0, 'time', np.arange(0.0, len(rotation_df))*0.03333333)
+    position_df.insert(0, 'time', np.arange(0.0, len(position_df))*0.03333333)
+    
     return rotation_df, position_df
 
 def get_processed_data(csv_filename, np_filename, training_split, standard_method):
@@ -247,7 +265,7 @@ def save_generated_dance(generated_data, training_split, hierarchy_file, c_heade
     :type bool
     """
     rotation = generated_data[:,:162] #get the first 162 columns
-    position = generated_data[:,[162, 163, 164]] #get the last 3 columns
+    position = generated_data[:,-3:] #get the last 3 columns
     hierarchy = pd.read_csv(hierarchy_file)
     
     rotation_df = pd.DataFrame(rotation, columns=c_headers)
@@ -257,6 +275,8 @@ def save_generated_dance(generated_data, training_split, hierarchy_file, c_heade
  
     rotation_df.to_csv(save_filename+"_rot.csv", index=False)
     position_df.to_csv(save_filename+"_pos.csv", index=False) 
+    
+    return position_df, rotation_df
     
 
 def _split_data(data, training_split, validation_split):

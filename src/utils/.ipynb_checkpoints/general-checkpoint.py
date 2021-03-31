@@ -84,3 +84,8 @@ def get_save_path(filename):
     csv_filename = os.path.join(csv_data_dir, filename)
     np_filename = os.path.join(np_save_dir, filename+np_file_suffix)
     return csv_filename, np_filename
+
+def csv_to_bvh(hierarchy_file, position_file, rotation_file):
+    os.system(' '.join(["csv2bvh", hierarchy_file, position_file, rotation_file]))
+    bvh_file = '.'.join(hierarchy_file.replace("_hierarchy", '').split('.')[:-1])+".bvh"
+    os.system(' '.join(["mv",bvh_file,generated_bvh_file]))

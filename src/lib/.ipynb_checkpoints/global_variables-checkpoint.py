@@ -7,6 +7,17 @@ from .generator_dependencies import *
         Recurrent Network Models for Human Dynamics by Katerina Fragkiadaki, Sergey Levine, Panna Felsen, and Jitendra Malik
         Generative Choreography using Deep Learning by Luka Crnkovic-Friis and Louise Crnkovic-Friis
 """
+""" 
+===============================
+======= Temp Variables ========
+===============================   
+"""
+vertical_spacial_axis = 'Y' #The axis that is NOT being relativized (either None, X, Y, or Z)
+shuffle_data = True #Shuffle windowed data during training
+peep_hole = False
+standardize_positions = True
+relativize_positions = False
+convensional_method = True #whether or not the rotational dataset should be standardized by convensional methods (val-mean)/std vs. val/180
 
 """ 
 ======================================
@@ -42,7 +53,7 @@ epochs = 200 #maximum number of times all training samples are fed into the mode
 metrics=[tf.keras.metrics.MeanAbsoluteError(), tf.keras.metrics.MeanSquaredLogarithmicError(), tf.keras.metrics.RootMeanSquaredError(), tf.keras.metrics.Hinge(), tf.keras.losses.KLDivergence(), tf.keras.metrics.MeanSquaredError()]
 stopping_patience = 20 #number of epochs with no improvement after which training will be stopped
 temperature = 1
-
+use_mdn = False
 """ 
 ===============================
 ======= Data Variables ========
@@ -55,12 +66,11 @@ batch_size = 32 #number of samples trained before performing one step of gradien
 look_back = 50 #how many frames will be used as a history for prediction
 offset = 1 #how many frames in the future is the prediction going to occur at
 forecast = 1 #how many frames will be predicted
-sample_increment = 25 #number of frames between each sample
+sample_increment = 1 #number of frames between each sample
 
 training_split = 0.7 #the proportion of the data to use for training
 validation_split = 0.2 #the proportion of the data to use for validating during the training phase at the end of each epoch
 evaluation_split = 0.1 #(test_split) the proportion of the data for evaluating the model effectiveness after training completion
-convensional_method = False #whether or not the rotational dataset should be standardized by convensional methods (val-mean)/std vs. val/180
 
 """ 
 ==============================
@@ -76,15 +86,26 @@ csv_data_dir = os.path.join(_extras_dir, r"data/CSV/Raw") #directory to the csv 
 np_data_dir = os.path.join(_extras_dir, r"data/Numpy") #directory to the numpy representation of the dances
 logs_dir = os.path.join(_base_dir, "logs") #general output directory
 graphics_dir = os.path.join(_base_dir, "graphics")
+hierarchy_dir = os.path.join(csv_data_dir, "hierarchy")
 """
     ***** Identifiers *****
 """
 _model_identifier = "units-{}_timesteps-{}".format(units, look_back) #model-specific string for use in creating readily identifiable filenames
-_data_identifier = "lb-{}_o-{}_f-{}_si-{}_sm-{}".format(look_back, offset,forecast, sample_increment,convensional_method) #data-specific string for use in creating readily identifiable filenames
+_data_identifier = "lb-{}_o-{}_f-{}_si-{}_sm-{}_rp-{}_sp-{}_va-{}".format(look_back, offset,forecast, sample_increment, convensional_method, relativize_positions, standardize_positions, vertical_spacial_axis) #data-specific string for use in creating readily identifiable filenames
 _split_identifier = "ts-{}_vs-{}_es-{}".format(training_split, validation_split, evaluation_split) #split-specific string for use in creating readily identifiable filenames
 _full_identifier = _model_identifier+"_"+_data_identifier+"_"+_split_identifier #string for use in creating readily identifiable filenames 
 _checkpoint_extension = ".h5" #file type to save the model weights as, either tensorflow's default (.ckpt) or keras's default (.h5) 
 _weights_filename = "weights_{}_".format(look_back)+_full_identifier+"_epoch-{epoch:02d}_loss-{loss:.5f}_val-loss-{val_loss:.5f}"+_checkpoint_extension #full filename to save training weights to
+_model_type = 'LSTM-RNN'
+if(use_mdn):
+    _model_type += '_MDN'
+    
+_generated_bvh_filename = "{}-lb_".format(look_back)
+if(relativize_positions):
+    _generated_bvh_filename += "relativized_"
+if(standardize_positions):
+    _generated_bvh_filename += "standardized_"
+_generated_bvh_filename += "method:{}_shuffled:{}".format(convensional_method, shuffle_data)
 """
     ***** Save Locations *****
 """
@@ -95,19 +116,13 @@ np_file_suffix = "_"+_data_identifier+"_ts-{}".format(training_split) #end half 
     ***** Save Files *****
 """
 weights_file = os.path.join(logs_save_dir, _weights_filename)
-architecture_file = os.path.join(logs_save_dir, "model-architecture_"+_model_identifier+".json")
-model_file = os.path.join(logs_save_dir, "model-full_"+_full_identifier+".h5")
+architecture_file = os.path.join(logs_save_dir, "model_{}_architecture_".format(_model_type)+_model_identifier+".json")
+model_file = os.path.join(logs_save_dir, "model_{}_full_".format(_model_type)+_full_identifier+".h5")
 
 evaluation_filepath = os.path.join(np_save_dir, "_comprehensive_evaluation_"+_data_identifier+"_es-{}".format(evaluation_split))
 history_train_file = os.path.join(logs_save_dir, "history_train_"+_full_identifier+".json")
 history_eval_file = os.path.join(logs_save_dir, "history_eval_"+_full_identifier+".json")
-standardization_json = os.path.join(logs_dir,'rotational_standardization_metrics.json')
+standardization_json = os.path.join(logs_dir,'standardization_metrics.json')
 label_json = os.path.join(logs_dir, "dance_labels.json")
 
-""" 
-===============================
-======= Temp Variables ========
-===============================   
-"""
-vertical_spacial_axis = None #The axis that is NOT being relativized (either None, X, Y, or Z)
-shuffle_data = False #Shuffle windowed data during training
+generated_bvh_file = os.path.join(logs_save_dir, _generated_bvh_filename+".bvh")

@@ -14,15 +14,16 @@ def _pre_process_sentence(raw):
     result = re.sub("\n", '', result)
     return result
 
-def _classify_sentence(sentence):
+def _classify_sentence(sentence, analyzer):
     """ Calculate the sentiment score(s) for a given sentence.
     
     :param sentence: the single sentence to be classified
     :type str
+    :param analyzer: the flair text classifier
+    :type flair.models.TextClassifier
     :return: cooresponding sentiment 
     :type float
     """
-    analyzer = TextClassifier.load('en-sentiment')
     phrase = Sentence(sentence)
     analyzer.predict(phrase)
     sentiment = phrase.labels[0].to_dict()
@@ -30,8 +31,11 @@ def _classify_sentence(sentence):
         return sentiment['confidence']
     else:
         return -sentiment['confidence']
+    
+def load_analyzer():
+    return TextClassifier.load('en-sentiment')
 
-def get_sentiment(text):
+def get_sentiment(text, analyzer=None):
     """ Calculate the sentiment score(s) for the text by summing the scores of the individual sentences which make it up.
     
     :param raw: the original phrase to analyze
@@ -39,8 +43,10 @@ def get_sentiment(text):
     :return: a list with the sentiment scores of each individual sentence and the overall score based on the summation of the list
     :type tuple
     """
+    if(not analyzer):
+        analyzer = load_analyzer()
     scores = []
     for s in [sent for sent in text.split(". ")]: 
-        scores.append(classify_sentence(s))
+        scores.append(_classify_sentence(s, analyzer))
     overall_score = round(sum(scores), 3)
     return scores, overall_score

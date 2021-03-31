@@ -1,6 +1,6 @@
 from lib.generator_dependencies import *
 from lib.general_dependencies import *
-from utils.general import *
+from utils.general import write
 
 class CustomCallback(keras.callbacks.Callback):
     """ A class to create custom callback options. This overrides a set of methods called at various stages of training, testing, and predicting. 
@@ -28,18 +28,22 @@ class CustomCallback(keras.callbacks.Callback):
         pass
 
     def on_test_begin(self, logs=None):
-        self.start_time = time.time()
-        write("Evaluation Beginning:\t "+ time.ctime(self.start_time), self.out_file)
+        pass
+        #self.start_time = time.time()
+        #write("Evaluation Beginning:\t "+ time.ctime(self.start_time), self.out_file)
 
     def on_test_end(self, logs=None):
-        write("Evaluation Complete --- %s minutes ---" % ((time.time() - self.start_time)/60), self.out_file)
+        pass
+        #write("Evaluation Complete --- %s minutes ---" % ((time.time() - self.start_time)/60), self.out_file)
 
     def on_predict_begin(self, logs=None):
-        self.start_time = time.time()
-        write("Predicting Beginning:\t "+ time.ctime(self.start_time), self.out_file)
+        pass
+        #self.start_time = time.time()
+        #write("Predicting Beginning:\t "+ time.ctime(self.start_time), self.out_file)
 
     def on_predict_end(self, logs=None):
-        write("Predicting Complete --- %s minutes ---" % ((time.time() - self.start_time)/60), self.out_file)
+        pass
+        #write("Predicting Complete --- %s minutes ---" % ((time.time() - self.start_time)/60), self.out_file)
 
     def on_train_batch_begin(self, batch, logs=None):
         pass
