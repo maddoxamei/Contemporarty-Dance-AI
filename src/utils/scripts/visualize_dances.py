@@ -4,19 +4,18 @@ import os, glob
 from math import sin, cos, radians
 
 model_to_load = "Michelle"
-render_takes = ["AI"] #Both determines which mocab is loaded and which takes are rendered
+render_takes = ["Andria_Satisfied_v2"] #Both determines which mocab is loaded and which takes are rendered
+render_content = True
+content_tag = None
 
 content_path = os.path.join(r"C:\Users\maddo\Documents",r"GitHub\Contemporarty-Dance-AI\content\motion_builder")
 character_model_path = content_path
 motion_capture_path = os.path.join(content_path, "motion_capture")
 rendered_content_path = os.path.join(content_path, "renders")
 
-mocab_file_type = "bvh"
-all_files = r"\*." + mocab_file_type
-
 character_model = os.path.join(character_model_path, model_to_load + ".fbx")
-motion_capture_data = glob.glob(motion_capture_path + all_files)
-t_pose = glob.glob(motion_capture_path + "\*T-Pose*.fbx")
+motion_capture_data = sorted([f for f in glob.glob(motion_capture_path+r"\*") if f.endswith(".fbx") or f.endswith(".bvh")], key=str.upper)
+t_pose = motion_capture_data.pop()
 
 class Camera():
     def __init__(self, obj_to_aim_at, distance, height, show_grid = False):
@@ -185,20 +184,20 @@ def import_Dances(mocab_filename_list):
     FBApplication().FileImportWithOptions(import_options)
 
 def import_T_Pose(init_pose):
-    FBApplication().FileMerge(init_pose, False) #Will not load UI dialog box
+    import_Dances([init_pose])
 
 def main():
     FBApplication().FileNew()
     import_Dances([m for m in motion_capture_data for t in render_takes if t.split('_')[0] in m])
     hip_camera = Camera('BVH:Hips', 400, 1.5)
     Floor(os.path.abspath(os.path.join( content_path,"tiled_floor.jpg" )), "tiled_floor")
-    renderer = Render_Options(1, render_takes, rendered_content_path, render=False)
+    renderer = Render_Options(1, render_takes, rendered_content_path, render_content, content_tag)
 
     scene = FBSystem().Scene
     if model_to_load:
         renderer.options.ViewingMode = FBVideoRenderViewingMode().FBViewingModeModelsOnly
-        FBApplication().FileMerge(character_model, False)
-        import_T_Pose(t_pose[0])
+        FBApplication().FileMerge(character_model, False) 
+        import_T_Pose(t_pose)
         mixamo = characterizeModel('mixamorig')
         mixamo.ActiveInput = True
         characterizeModel('BVH')
