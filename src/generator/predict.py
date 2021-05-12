@@ -78,6 +78,48 @@ def generate_dance(model, n_frames, random_frame=False, out_file=sys.stdout):
         generated = seed
         
         for i in progressbar(range(n_frames),"{} Progress: ".format(diversity)):
+            trial = generated[-look_back:]
+            while (True): #classifier determines dance is NOT match up
+                pred = model.predict(np.array([trial]), verbose=0)[0]
+                np.vstack((generated, pred))
+            #mdn.sample_from_output(preds, feature_size, mixtures, temp=diversity, sigma_temp=sigma_temp)
+            generated = np.vstack((generated, pred))
+        write("Generation Complete --- %s minutes ---" % ((time.time() - start_time)/60), out_file)
+        print("Generation Complete --- %s minutes ---" % ((time.time() - start_time)/60))
+        
+        filename = os.path.join(logs_save_dir, "generated_dance_{}-frames_{}-diversity".format(n_frames, diversity))
+        _save_generated_dance(generated, dances[seed_dance_index], filename, out_file)
+
+def generate_dance2(model, n_frames, random_frame=False, out_file=sys.stdout):
+    """ Generate a dance sequence with the given model
+
+    :param model: the model to use for prediction 
+    :type keras.Model
+    :param n_frames: the number of frames the model should generate
+    :type int
+    """
+    #select random dance for seed
+    dances = get_unique_dance_names(csv_data_dir)
+    seed_dance_index = random.randint(0, len(dances) - 1)
+    csv_filename, np_filename = get_save_path(dances[seed_dance_index])
+    dance = get_processed_data(csv_filename, np_filename, training_split, convensional_method)
+    
+    seed = dance[:look_back]
+    if random_frame:
+        #select random frame(s) for seed
+        seed_frame_index = random.randint(0, len(dance) - (look_back+1))
+        seed = dance[seed_frame_index:seed_frame_index+look_back]
+    
+    write("Generating dance with seed from "+dances[seed_dance_index], out_file)
+    print("Generating dance with seed from "+dances[seed_dance_index])
+    #for diversity in [0.2, 0.5, 1.0, 1.2]:
+    for diversity in [1.0]:
+        start_time = time.time()
+        write("{}-diversity Predicting Beginning:\t".format(diversity)+ time.ctime(start_time), out_file)
+        write("{}-diversity Predicting Beginning:\t".format(diversity)+ time.ctime(start_time)) #sys.stdout
+        generated = seed
+        
+        for i in progressbar(range(n_frames),"{} Progress: ".format(diversity)):
             preds = model.predict(np.array([generated[-look_back:]]), verbose=0)[0]
             #mdn.sample_from_output(preds, feature_size, mixtures, temp=diversity, sigma_temp=sigma_temp)
             generated = np.vstack((generated, preds))

@@ -1,6 +1,6 @@
 from lib.data_dependencies import *
 from lib.general_dependencies import *
-from lib.global_variables import standardization_json, vertical_spacial_axis, standardize_positions, relativize_positions
+from lib.global_variables import processing_json, vertical_spacial_axis
 
 def _drop_excess_features(df, axis, dropped_features = ['End', 'Time']):
     df_features = df.index if axis==0 else df.columns
@@ -8,22 +8,32 @@ def _drop_excess_features(df, axis, dropped_features = ['End', 'Time']):
         df.drop(feature, axis=axis, inplace=True)
     return df
         
-def _standardize_dataset(data_df, training_split, vertical_axis = None):
-    with open(standardization_json, 'r') as f:
+def _offset_data(data_df):
+    data_df = data_df - data_df.iloc[0]
+    return data_df
+    
+def _get_metrics_df(data_df, training_split, prev_process):
+    with open(processing_json, 'r') as f:
         metrics_dict = f.read()
-    metrics_dict = json.loads(metrics_dict)[str(training_split)][str(vertical_axis)]
+    metrics_dict = json.loads(metrics_dict)[str(training_split)][str(prev_process)]
     full_metrics_df = pd.DataFrame.from_dict(metrics_dict)
     # yields the elements in `list_2` that are NOT in `list_1`
-    metrics_df = _drop_excess_features(full_metrics_df.copy(), 0, np.setdiff1d(full_metrics_df.index, data_df.columns))
+    return _drop_excess_features(full_metrics_df.copy(), 0, np.setdiff1d(full_metrics_df.index, data_df.columns))
+    
+def _normalize_dataset(data_df, training_split, range_min, range_max, prev_process = ' '):
+    metrics_df = _get_metrics_df(data_df, training_split, prev_process)
+    return ((range_max-range_min)*(data_df - metrics_df['min']) / (metrics_df['max'] - metrics_df['min'])) + range_min
+
+def _un_normalize_dataset(data_df, training_split, range_min, range_max, prev_process = ' '):
+    metrics_df = _get_metrics_df(data_df, training_split, prev_process)
+    return ((data_df - range_min)*(metrics_df['max'] - metrics_df['min'])/(range_max-range_min)) + metrics_df['min']
+    
+def _standardize_dataset(data_df, training_split, prev_process = ' '):
+    metrics_df = _get_metrics_df(data_df, training_split, prev_process)
     return (data_df - metrics_df['mean']) / metrics_df['std']
 
-def _un_standardize_dataset(data_df, training_split, vertical_axis = None):
-    with open(standardization_json, 'r') as f:
-        metrics_dict = f.read()
-    metrics_dict = json.loads(metrics_dict)[str(training_split)][str(vertical_axis)]
-    full_metrics_df = pd.DataFrame.from_dict(metrics_dict)
-    # yields the elements in `list_2` that are NOT in `list_1`
-    metrics_df = _drop_excess_features(full_metrics_df.copy(), 0, np.setdiff1d(full_metrics_df.index, data_df.columns))
+def _un_standardize_dataset(data_df, training_split, prev_process = ' '):
+    metrics_df = _get_metrics_df(data_df, training_split, prev_process)
     return (data_df * metrics_df['std']) + metrics_df['mean']
 
 def _relativize_data(data):
@@ -56,15 +66,16 @@ def _un_relativize_data(data):
             data.iloc[index] = row + data.iloc[index-1]
     return data
 
-def _pre_process_pos_data(position_df, relativize, standardize, training_split, vertical_axis = None):
+
+def _pre_process_pos_data(position_df, processes, training_split, vertical_axis = None):
     """ Alter the position data such that the horizontal planar movement is relative and the verticle axis remains global
     
     :param position_df: Hips.X, Hips.Y, and Hips.Z position data
     :type pandas.DataFrame
+    :param processes: list of chars to indicate sequence of pre-processing techniques
+    :type list
     :param training_split: the proportion of the data to use for training
     :type float
-    :param standardize: whether or not the position data should be standardized
-    :type bool
     :param vertical_axis: the header cooresponding to the verticle axis (either X, Y, Z) or None
     :type char
     :return: dataframe that contains the altered hip positions
@@ -72,57 +83,63 @@ def _pre_process_pos_data(position_df, relativize, standardize, training_split, 
     """
     c_headers = ['.'.join(c.split('.')[0:1]+['Pos']+c.split('.')[1:2]) if 'Pos' not in c else c for c in position_df.columns]
     prefix = '.'.join(position_df.columns[0].split('.')[:-1]+[""])
-    if(relativize):
-        if(vertical_axis):
-            vertical_movement = position_df.pop(prefix+vertical_axis)
-            position_df = _relativize_data(position_df)
-            position_df[prefix+vertical_axis] = vertical_movement
-        else:
-            position_df = _relativize_data(position_df)
-    if(standardize):
-        position_df = _standardize_dataset(position_df, training_split, vertical_axis)
+    for i, p in enumerate(processes):
+        if (p == 'o'):
+            position_df = _offset_data(position_df)
+        elif (p == 'n'):
+            position_df = _normalize_dataset(position_df, training_split, -1, 1, processes[i-1] if i>0 else ' ')
+        elif(p == 's'):
+            position_df = _standardize_dataset(position_df, training_split, processes[i-1] if i>0 else ' ')
+        elif(p == 'r'):
+            if(vertical_axis):
+                vertical_movement = position_df.pop(prefix+vertical_axis)
+                position_df = _relativize_data(position_df)
+                position_df[prefix+vertical_axis] = vertical_movement
+            else:
+                position_df = _relativize_data(position_df)
     return position_df
 
-def _post_process_pos_data(position_df, hierarchy_df, relativized, standardized, training_split, vertical_axis = None):
-    """ Alter the position data such that the horizontal planar movement is global, making all position channel dimensions global
+def _post_process_pos_data(position_df, processes, training_split, vertical_axis = None):
+    """ Alter the position data such that the horizontal planar movement is relative and the verticle axis remains global
     
     :param position_df: Hips.X, Hips.Y, and Hips.Z position data
     :type pandas.DataFrame
-    :param hierarchy: joint offset data (must include Hips.X, Hips.Y, and Hips.Z )
-    :type pandas.DataFrame
-    :param standardized: whether or not the position data should be standardized
-    :type bool
-    :param vertical_axis: the header cooresponding to the verticle axis (either X, Y, Z) or None
-    :type char
+    :param processes: list of chars to indicate sequence of pre-processing techniques
+    :type list
     :param training_split: the proportion of the data to use for training
-    :type float: the header cooresponding to the verticle axis (either X, Y, Z)
+    :type float
+    :param vertical_axis: the header cooresponding to the verticle axis (either X, Y, Z) or None
     :type char
     :return: dataframe that contains the altered hip positions
     :rtype: pandas.DataFrame
     """
     c_headers = ['.'.join(c.split('.')[0:1]+['Pos']+c.split('.')[1:2]) if 'Pos' not in c else c for c in position_df.columns]
     prefix = '.'.join(position_df.columns[0].split('.')[:-1]+[""])
-    if(standardized):
-        position_df = _un_standardize_dataset(position_df, training_split, vertical_axis)
-    if(relativized):
-        if(vertical_axis):
-            vertical_movement = position_df.pop(prefix+vertical_axis)
-            position_df = _un_relativize_data(position_df)
-            position_df[prefix+vertical_axis] = vertical_movement
-        else:
-            position_df = _un_relativize_data(position_df)
-    
+    for i, p in enumerate(processes[::-1]):
+        if (p == 'o'):
+            pass
+        elif (p == 'n'):
+            position_df = _un_normalize_dataset(position_df, training_split, -1, 1, processes[i-1] if i>0 else ' ')
+        elif(p == 's'):
+            position_df = _un_standardize_dataset(position_df, training_split, processes[i-1] if i>0 else ' ')
+        elif(p == 'r'):
+            if(vertical_axis):
+                vertical_movement = position_df.pop(prefix+vertical_axis)
+                position_df = _un_relativize_data(position_df)
+                position_df[prefix+vertical_axis] = vertical_movement
+            else:
+                position_df = _un_relativize_data(position_df)
     return position_df
 
-def _pre_process_rot_data(rotation_df, standard_method, training_split, vertical_axis = None):
+def _pre_process_rot_data(rotation_df, processes, training_split):
     """ Standardizes the rotational dataset values.
         Standard method by mean subtraction and division by the standard deviation along each dimension. This will center the values around zero.
         Unconvensional method by dividing by 180 as all rotational values are constrained between -180 and 180
     
     :param rotation_df: the data containing the rotational channels of the dance frames
     :type pandas.DataFrame
-    :param standard_method: whether or not the rotational dataset should be standardized by convensional methods
-    :type bool
+    :param processes: list of chars to indicate sequence of pre-processing techniques
+    :type list
     :param training_split: the proportion of the data to use for training
     :type float
     :param vertical_axis: the header cooresponding to the verticle axis (either X, Y, Z) or None
@@ -130,51 +147,64 @@ def _pre_process_rot_data(rotation_df, standard_method, training_split, vertical
     :return: the standardized rotational dance frames
     :rtype: pandas.DataFrame
     """
-    if standard_method:
-        rotation_df = _standardize_dataset(rotation_df, training_split, vertical_axis)
-    else:
-        rotation_df = rotation_df/180
+    for i, p in enumerate(processes):
+        if (p == 'o'):
+            rotation_df = rotation_df/180
+        elif (p == 'n'):
+            rotation_df = _normalize_dataset(rotation_df, training_split, -1, 1, processes[i-1] if i>0 else ' ')
+        elif(p == 's'):
+            rotation_df = _standardize_dataset(rotation_df, training_split, processes[i-1] if i>0 else ' ')
+        elif(p == 'r'):
+            rotation_df = _relativize_data(rotation_df)
     return rotation_df
 
-def _post_process_rot_data(rotation_df, standard_method, training_split, vertical_axis = None):
-    """ Undoes the transformations during the rotational data standardization process.
-        Values will no longer be centered around 0.
+def _post_process_rot_data(rotation_df, processes, training_split):
+    """ Standardizes the rotational dataset values.
+        Standard method by mean subtraction and division by the standard deviation along each dimension. This will center the values around zero.
+        Unconvensional method by dividing by 180 as all rotational values are constrained between -180 and 180
     
     :param rotation_df: the data containing the rotational channels of the dance frames
     :type pandas.DataFrame
+    :param processes: list of chars to indicate sequence of pre-processing techniques
+    :type list
     :param training_split: the proportion of the data to use for training
     :type float
-    :param standard_method: whether or not the rotational dataset should be standardized by convensional methods
-    :type bool
     :param vertical_axis: the header cooresponding to the verticle axis (either X, Y, Z) or None
     :type char
-    :return: the un-standardized rotational dance frames
+    :return: the standardized rotational dance frames
     :rtype: pandas.DataFrame
     """
-    if standard_method:
-        rotation_df = _un_standardize_dataset(rotation_df, training_split, vertical_axis)
-    else:
-        rotation_df *= 180
+    for i, p in enumerate(processes[::-1]):
+        if (p == 'o'):
+            rotation_df = rotation_df*180
+        elif (p == 'n'):
+            rotation_df = _un_normalize_dataset(rotation_df, training_split, -1, 1, processes[i-1] if i>0 else ' ')
+        elif(p == 's'):
+            rotation_df = _un_standardize_dataset(rotation_df, training_split, processes[i-1] if i>0 else ' ')
+        elif(p == 'r'):
+            rotation_df = _un_relativize_data(rotation_df)
     return rotation_df
 
-def _pre_process_data(csv_filename, training_split, standard_method):
+def _pre_process_data(csv_filename, training_split, pos_processes, rot_processes):
     """ Process the data so that it is ready to be fed into the neural network
     
     :param csv_filename: path (directory+filename) to the csv representation of a particular dance (does NOT includes file-extension)
     :type str
     :param training_split: the proportion of the data to use for training
     :type float
-    :param standard_method: whether or not the rotational dataset should be standardized by convensional methods
-    :type bool
+    :param pos_processes: str to indicate sequence of pre-processing techniques for position data
+    :type str
+    :param rot_processes: str to indicate sequence of pre-processing techniques for rotation data
+    :type str
     :return: dataframe that contains the processed dance frames
     :rtype: pandas.DataFrame
     """   
     position_df = pd.read_csv(csv_filename+"_worldpos.csv", usecols=['Hips.X','Hips.Y','Hips.Z'])
     rotation_df = pd.read_csv(csv_filename+"_rotations.csv")
     
-    data = _pre_process_rot_data(rotation_df.copy(), standard_method, training_split, vertical_spacial_axis)
+    data = _pre_process_rot_data(rotation_df.copy(), rot_processes, training_split)
     # Relativize the horizontal planer position movement
-    position_df = _pre_process_pos_data(position_df, relativize_positions, standardize_positions, training_split, vertical_spacial_axis)
+    position_df = _pre_process_pos_data(position_df, pos_processes, training_split, vertical_spacial_axis)
     
     # Remove the all the features which aren't all zeros and the time feature from the dataset
     _drop_excess_features(data, 1)
@@ -185,7 +215,7 @@ def _pre_process_data(csv_filename, training_split, standard_method):
     data['Hips.Pos.Z'] = position_df.pop('Hips.Z')
     return data
 
-def _post_process_data(rotation_df, position_df, hierarchy_df, training_split, standard_method):
+def _post_process_data(rotation_df, position_df, hierarchy_df, training_split, pos_processes, rot_processes):
     """ Un-process the data to transform the values representign the generated dance into something MotionBuidler (visualization program) can interpret.
         Un-standardize and un-realativaize the generated dance
 
@@ -197,14 +227,16 @@ def _post_process_data(rotation_df, position_df, hierarchy_df, training_split, s
     :type pandas.DataFrame
     :param training_split: the proportion of the data to use for training
     :type float
-    :param standard_method: whether or not the rotational dataset should be standardized by convensional methods
-    :type bool
+    :param pos_processes: str to indicate sequence of pre-processing techniques for position data
+    :type str
+    :param rot_processes: str to indicate sequence of pre-processing techniques for rotation data
+    :type str
     :return: the unprocessed versions of the rotation and position frames from the generated dance
     :rtype: tuple
     """
     #undo the normalization and standardization of the data
-    rotation_df = _post_process_rot_data(rotation_df, standard_method, training_split, vertical_spacial_axis)
-    position_df = _post_process_pos_data(position_df, hierarchy_df, relativize_positions, standardize_positions, training_split, vertical_spacial_axis)
+    rotation_df = _post_process_rot_data(rotation_df, rot_processes, training_split)
+    position_df = _post_process_pos_data(position_df, pos_processes, training_split, vertical_spacial_axis)
     
     new_headers = []
     joints = [j for j in hierarchy_df['joint'].to_numpy() if "End" not in j]
@@ -212,15 +244,15 @@ def _post_process_data(rotation_df, position_df, hierarchy_df, training_split, s
         new_headers.append(j+".Z")
         new_headers.append(j+".X")
         new_headers.append(j+".Y")
-
-    rotation_df = rotation_df.reindex(columns=new_headers)  
+        
+    rotation_df = rotation_df.reindex(columns=new_headers)
     
     rotation_df.insert(0, 'time', np.arange(0.0, len(rotation_df))*0.03333333)
     position_df.insert(0, 'time', np.arange(0.0, len(position_df))*0.03333333)
     
     return rotation_df, position_df
 
-def get_processed_data(csv_filename, np_filename, training_split, standard_method):
+def get_processed_data(csv_filename, np_filename, training_split, pos_processes, rot_processes):
     """ Fetch the pre-procced data cooresponding to the given dance name
 
     :param csv_filename: path (directory+filename) to the csv representation of a particular dance (does NOT includes file-extension)
@@ -229,26 +261,33 @@ def get_processed_data(csv_filename, np_filename, training_split, standard_metho
     :type str
     :param training_split: the proportion of the data to use for training
     :type int
-    :param standard_method: whether or not the rotational dataset should be standardized by convensional methods
-    :type bool
+    :param pos_processes: str to indicate sequence of pre-processing techniques for position data
+    :type str
+    :param rot_processes: str to indicate sequence of pre-processing techniques for rotation data
+    :type str
     :return: the pre-processed dance data
     :rtype: numpy.ndarray
     """
+    
+    _list = np_filename.split('/')
+    prefix = '/'.join(_list[:-2])
+    suffix = _list[-1]
+    np_filepath = os.path.join(prefix, suffix[:suffix.find("_lb")]+suffix[suffix.find("_pp"):])    
     #If the corresponding numpy file doesn't yet exist, create and save it
-    if not (os.path.exists(np_filename+".npy")):
+    if not (os.path.exists(np_filepath+".npy")):
         #Print statement for status update
         #print("Creating pre-processed datafile:", np_filename)
         #load the csv file and establish the number of rows and columns
-        data = _pre_process_data(csv_filename, training_split, standard_method)
+        data = _pre_process_data(csv_filename, training_split, pos_processes, rot_processes)
         
         #data.to_csv("preprocessed_data.csv", index=False)
         #data = data.iloc[:].values #Enables selection/edit of cells in the pandas dataframe
-        np.save(np_filename, data)
+        np.save(np_filepath, data)
         #print("Saved the pre-processed data to\n\t", np_filename)
 
-    return np.load(np_filename+".npy")
+    return np.load(np_filepath+".npy")
 
-def save_generated_dance(generated_data, training_split, hierarchy_file, c_headers, save_filename, standard_method):
+def save_generated_dance(generated_data, training_split, hierarchy_file, c_headers, save_filename, pos_processes, rot_processes):
     """ Save the generated dance to a csv file for bvh converstion later.
 
     :param generated_data: the array corresponding the the generated frames of dance
@@ -261,8 +300,12 @@ def save_generated_dance(generated_data, training_split, hierarchy_file, c_heade
     :type list
     :param save_filename: the directory and filename to store the generated dance at
     :type str:
-    :param standard_method: whether or not the rotational dataset should be standardized by convensional methods
-    :type bool
+    :param pos_processes: str to indicate sequence of pre-processing techniques for position data
+    :type str
+    :param rot_processes: str to indicate sequence of pre-processing techniques for rotation data
+    :type str
+    :return: the pre-processed dance data
+    :rtype: (pandas.DataFrame, pandas.DataFrame)
     """
     rotation = generated_data[:,:162] #get the first 162 columns
     position = generated_data[:,-3:] #get the last 3 columns
@@ -271,13 +314,12 @@ def save_generated_dance(generated_data, training_split, hierarchy_file, c_heade
     rotation_df = pd.DataFrame(rotation, columns=c_headers)
     position_df = pd.DataFrame(position, columns=c_headers[:3])
     
-    rotation_df, position_df = _post_process_data(rotation_df, position_df, hierarchy, training_split, standard_method)
+    rotation_df, position_df = _post_process_data(rotation_df, position_df, hierarchy, training_split, pos_processes, rot_processes)
  
     rotation_df.to_csv(save_filename+"_rot.csv", index=False)
     position_df.to_csv(save_filename+"_pos.csv", index=False) 
     
-    return position_df, rotation_df
-    
+    return position_df, rotation_df    
 
 def _split_data(data, training_split, validation_split):
     """ Separates the data into three different datasets (training, validation, and evaluation) based off the pre-defined split proportions.
@@ -345,8 +387,8 @@ def _sequence_data(data, look_back, offset, forecast, sample_increment):
     N_SAMPLES = len(dataX)
     Y = np.reshape(Y, (N_SAMPLES, N_COLOMNS))
     return X, Y
-    
-def get_sample_data(csv_filename, np_filename, look_back, offset, forecast, sample_increment, training_split, validation_split, standard_method):
+
+def get_sample_data(csv_filename, np_filename, look_back, offset, forecast, sample_increment, training_split, validation_split, pos_processes, rot_processes):
     """ Fetch the pre-sequenced or sampled data from the given dance, or create/save it if it does not yet exist
 
     :param csv_filename: path (directory+filename) to the csv representation of a particular dance (does NOT includes file-extension)
@@ -365,8 +407,10 @@ def get_sample_data(csv_filename, np_filename, look_back, offset, forecast, samp
     :type float
     :param validation_split: the proportion of the data to use for validating during the training phase at the end of each epoch
     :type float
-    :param standard_method: whether or not the rotational dataset should be standardized by convensional methods
-    :type bool
+    :param pos_processes: str to indicate sequence of pre-processing techniques for position data
+    :type str
+    :param rot_processes: str to indicate sequence of pre-processing techniques for rotation data
+    :type str
     :return: the collection of input X and target Y samples for the train, validation, and evaluation datasets
     :type tuple
     """    
@@ -391,7 +435,7 @@ def get_sample_data(csv_filename, np_filename, look_back, offset, forecast, samp
         #print("Creating the sequenced data:", np_filename)
         
         # Preprocess the data, then split it into train, validation, and evaluation datasets
-        data = get_processed_data(csv_filename, np_filename, training_split, standard_method)
+        data = get_processed_data(csv_filename, np_filename, training_split, pos_processes, rot_processes)
         train_data, validate_data, evaluate_data = _split_data(data, training_split, validation_split)
         
         #np_to_csv(train_data, "train_data")
@@ -419,3 +463,67 @@ def get_sample_data(csv_filename, np_filename, look_back, offset, forecast, samp
 def np_to_csv(arr, savefile):
     df = pd.DataFrame(arr) 
     df.to_csv(savefile+".csv", index=False)
+    
+def aggregate_data(out_file=sys.stdout):
+    dances = get_unique_dance_names(csv_data_dir)
+    comprehensive_train_X = np.array([])
+    comprehensive_train_Y = np.array([])
+    comprehensive_validate_X = np.array([])
+    comprehensive_validate_Y = np.array([])
+    comprehensive_evaluation_X = np.array([])
+    comprehensive_evaluation_Y = np.array([])
+    
+    comprehensive_train_Class_Y = np.array([])
+    comprehensive_validate_Class_Y = np.array([])
+    comprehensive_evaluation_Class_Y = np.array([])
+    
+    start_time = time.time()
+    for dance in progressbar(dances, "Progress: "):
+        csv_filename, np_filename = get_save_path(dance)
+        train_X, train_Y, validate_X, validate_Y, evaluation_X, evaluation_Y = get_sample_data(csv_filename, np_filename, look_back, offset, forecast, sample_increment, training_split, validation_split, pos_pre_processes, rot_pre_processes)
+    
+        train_Class_Y = np.full((train_X.shape[0],1),int(sentiment))
+        validate_Class_Y = np.full((validate_X.shape[0],1),int(sentiment))
+        evaluation_Class_Y = np.full((evaluation_X.shape[0],1),int(sentiment))
+        
+        if(len(comprehensive_train_X)==0):
+            comprehensive_train_X = train_X
+            comprehensive_train_Y = train_Y
+            comprehensive_validate_X = validate_X
+            comprehensive_validate_Y = validate_Y
+            comprehensive_evaluation_X = evaluation_X
+            comprehensive_evaluation_Y = evaluation_Y
+            
+            comprehensive_train_Class_Y = train_Class_Y
+            comprehensive_validate_Class_Y = validate_Class_Y
+            comprehensive_evaluation_Class_Y = evaluation_Class_Y
+        else:
+            comprehensive_train_X = np.vstack((comprehensive_train_X,train_X))
+            comprehensive_train_Y = np.vstack((comprehensive_train_Y,train_Y))
+            comprehensive_validate_X = np.vstack((comprehensive_validate_X,validate_X))
+            comprehensive_validate_Y = np.vstack((comprehensive_validate_Y,validate_Y))
+            comprehensive_evaluation_X = np.vstack((comprehensive_evaluation_X,evaluation_X))
+            comprehensive_evaluation_Y = np.vstack((comprehensive_evaluation_Y,evaluation_Y))
+            
+            comprehensive_train_Class_Y = np.vstack((comprehensive_train_Class_Y,train_Class_Y))
+            comprehensive_validate_Class_Y = np.vstack((comprehensive_validate_Class_Y,validate_Class_Y))
+            comprehensive_evaluation_Class_Y = np.vstack((comprehensive_evaluation_Class_Y,evaluation_Class_Y))
+            
+    write("Fetching and Agregating Training Data --- {} seconds ---".format(start_time - time.time()), out_file)  
+    
+    
+    np.save(training_filepath+"_X", comprehensive_train_X)
+    np.save(training_filepath+"_Y", comprehensive_train_Y)
+    np.save(validation_filepath+"_X", comprehensive_validate_X)
+    np.save(validation_filepath+"_Y", comprehensive_validate_Y)
+    np.save(evaluation_filepath+"_X", comprehensive_evaluation_X)
+    np.save(evaluation_filepath+"_Y", comprehensive_evaluation_Y)
+    
+    np.save(training_filepath+"_Class_Y", comprehensive_train_Class_Y)
+    np.save(validation_filepath+"_Class_Y", comprehensive_validate_Class_Y)
+    np.save(evaluation_filepath+"_Class_Y", comprehensive_evaluation_Class_Y)
+    
+def get_comprehensive_data():
+    if not (os.path.exists(training_filepath+"*.npy")):
+        aggregate_data()
+    return np.load(training_filepath+"_X.npy"), np.load(training_filepath+"_Y.npy"), np.load(validation_filepath+"_X.npy"), np.load(validation_filepath+"_Y.npy"), np.load(evaluation_filepath+"_X.npy"), np.load(evaluation_filepath+"_Y.npy"),np.load(training_filepath+"_Class_Y.npy"), np.load(validation_filepath+"_Class_Y.npy"), np.load(evaluation_filepath+"_Class_Y.npy")
