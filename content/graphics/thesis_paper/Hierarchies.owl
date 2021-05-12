@@ -1,0 +1,433 @@
+<?xml version="1.0"?>
+<rdf:RDF xmlns="http://www.semanticweb.org/ontologies/2021/4/untitled-ontology-5#"
+     xml:base="http://www.semanticweb.org/ontologies/2021/4/untitled-ontology-5"
+     xmlns:owl="http://www.w3.org/2002/07/owl#"
+     xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+     xmlns:xml="http://www.w3.org/XML/1998/namespace"
+     xmlns:xsd="http://www.w3.org/2001/XMLSchema#"
+     xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">
+    <owl:Ontology rdf:about="http://www.semanticweb.org/ontologies/2021/4/untitled-ontology-5"/>
+    
+
+
+    <!-- 
+    ///////////////////////////////////////////////////////////////////////////////////////
+    //
+    // Classes
+    //
+    ///////////////////////////////////////////////////////////////////////////////////////
+     -->
+
+    
+
+
+    <!-- #Arm -->
+
+    <owl:Class rdf:about="#Arm">
+        <rdfs:subClassOf rdf:resource="#Shoulder"/>
+    </owl:Class>
+    
+
+
+    <!-- #CodeStructure -->
+
+    <owl:Class rdf:about="#CodeStructure"/>
+    
+
+
+    <!-- #Contemporary-Dance-AI -->
+
+    <owl:Class rdf:about="#Contemporary-Dance-AI">
+        <rdfs:subClassOf rdf:resource="#CodeStructure"/>
+    </owl:Class>
+    
+
+
+    <!-- #Foot -->
+
+    <owl:Class rdf:about="#Foot">
+        <rdfs:subClassOf rdf:resource="#Leg"/>
+    </owl:Class>
+    
+
+
+    <!-- #ForeArm -->
+
+    <owl:Class rdf:about="#ForeArm">
+        <rdfs:subClassOf rdf:resource="#Arm"/>
+    </owl:Class>
+    
+
+
+    <!-- #Hand -->
+
+    <owl:Class rdf:about="#Hand">
+        <rdfs:subClassOf rdf:resource="#ForeArm"/>
+    </owl:Class>
+    
+
+
+    <!-- #Head -->
+
+    <owl:Class rdf:about="#Head">
+        <rdfs:subClassOf rdf:resource="#Neck"/>
+    </owl:Class>
+    
+
+
+    <!-- #Hips -->
+
+    <owl:Class rdf:about="#Hips">
+        <rdfs:subClassOf rdf:resource="#SkeletalHierarchy"/>
+    </owl:Class>
+    
+
+
+    <!-- #Index1 -->
+
+    <owl:Class rdf:about="#Index1">
+        <rdfs:subClassOf rdf:resource="#Hand"/>
+    </owl:Class>
+    
+
+
+    <!-- #Index2 -->
+
+    <owl:Class rdf:about="#Index2">
+        <rdfs:subClassOf rdf:resource="#Index1"/>
+    </owl:Class>
+    
+
+
+    <!-- #Index3 -->
+
+    <owl:Class rdf:about="#Index3">
+        <rdfs:subClassOf rdf:resource="#Index2"/>
+    </owl:Class>
+    
+
+
+    <!-- #Leg -->
+
+    <owl:Class rdf:about="#Leg">
+        <rdfs:subClassOf rdf:resource="#UpLeg"/>
+    </owl:Class>
+    
+
+
+    <!-- #Middle1 -->
+
+    <owl:Class rdf:about="#Middle1">
+        <rdfs:subClassOf rdf:resource="#Hand"/>
+    </owl:Class>
+    
+
+
+    <!-- #Middle2 -->
+
+    <owl:Class rdf:about="#Middle2">
+        <rdfs:subClassOf rdf:resource="#Middle1"/>
+    </owl:Class>
+    
+
+
+    <!-- #Middle3 -->
+
+    <owl:Class rdf:about="#Middle3">
+        <rdfs:subClassOf rdf:resource="#Middle2"/>
+    </owl:Class>
+    
+
+
+    <!-- #Neck -->
+
+    <owl:Class rdf:about="#Neck">
+        <rdfs:subClassOf rdf:resource="#Spine4"/>
+    </owl:Class>
+    
+
+
+    <!-- #Pinky1 -->
+
+    <owl:Class rdf:about="#Pinky1">
+        <rdfs:subClassOf rdf:resource="#Hand"/>
+    </owl:Class>
+    
+
+
+    <!-- #Pinky2 -->
+
+    <owl:Class rdf:about="#Pinky2">
+        <rdfs:subClassOf rdf:resource="#Pinky1"/>
+    </owl:Class>
+    
+
+
+    <!-- #Pinky3 -->
+
+    <owl:Class rdf:about="#Pinky3">
+        <rdfs:subClassOf rdf:resource="#Pinky2"/>
+    </owl:Class>
+    
+
+
+    <!-- #Ring1 -->
+
+    <owl:Class rdf:about="#Ring1">
+        <rdfs:subClassOf rdf:resource="#Hand"/>
+    </owl:Class>
+    
+
+
+    <!-- #Ring2 -->
+
+    <owl:Class rdf:about="#Ring2">
+        <rdfs:subClassOf rdf:resource="#Ring1"/>
+    </owl:Class>
+    
+
+
+    <!-- #Ring3 -->
+
+    <owl:Class rdf:about="#Ring3">
+        <rdfs:subClassOf rdf:resource="#Ring2"/>
+    </owl:Class>
+    
+
+
+    <!-- #Shoulder -->
+
+    <owl:Class rdf:about="#Shoulder">
+        <rdfs:subClassOf rdf:resource="#Spine4"/>
+    </owl:Class>
+    
+
+
+    <!-- #SkeletalHierarchy -->
+
+    <owl:Class rdf:about="#SkeletalHierarchy"/>
+    
+
+
+    <!-- #Spine -->
+
+    <owl:Class rdf:about="#Spine">
+        <rdfs:subClassOf rdf:resource="#Hips"/>
+    </owl:Class>
+    
+
+
+    <!-- #Spine1 -->
+
+    <owl:Class rdf:about="#Spine1">
+        <rdfs:subClassOf rdf:resource="#Spine"/>
+    </owl:Class>
+    
+
+
+    <!-- #Spine2 -->
+
+    <owl:Class rdf:about="#Spine2">
+        <rdfs:subClassOf rdf:resource="#Spine1"/>
+    </owl:Class>
+    
+
+
+    <!-- #Spine3 -->
+
+    <owl:Class rdf:about="#Spine3">
+        <rdfs:subClassOf rdf:resource="#Spine2"/>
+    </owl:Class>
+    
+
+
+    <!-- #Spine4 -->
+
+    <owl:Class rdf:about="#Spine4">
+        <rdfs:subClassOf rdf:resource="#Spine3"/>
+    </owl:Class>
+    
+
+
+    <!-- #Thumb1 -->
+
+    <owl:Class rdf:about="#Thumb1">
+        <rdfs:subClassOf rdf:resource="#Hand"/>
+    </owl:Class>
+    
+
+
+    <!-- #Thumb2 -->
+
+    <owl:Class rdf:about="#Thumb2">
+        <rdfs:subClassOf rdf:resource="#Thumb1"/>
+    </owl:Class>
+    
+
+
+    <!-- #Thumb3 -->
+
+    <owl:Class rdf:about="#Thumb3">
+        <rdfs:subClassOf rdf:resource="#Thumb2"/>
+    </owl:Class>
+    
+
+
+    <!-- #ToeBase -->
+
+    <owl:Class rdf:about="#ToeBase">
+        <rdfs:subClassOf rdf:resource="#Foot"/>
+    </owl:Class>
+    
+
+
+    <!-- #UpLeg -->
+
+    <owl:Class rdf:about="#UpLeg">
+        <rdfs:subClassOf rdf:resource="#Hips"/>
+    </owl:Class>
+    
+
+
+    <!-- #classifier -->
+
+    <owl:Class rdf:about="#classifier">
+        <rdfs:subClassOf rdf:resource="#graphics"/>
+    </owl:Class>
+    
+
+
+    <!-- #content -->
+
+    <owl:Class rdf:about="#content">
+        <rdfs:subClassOf rdf:resource="#Contemporary-Dance-AI"/>
+    </owl:Class>
+    
+
+
+    <!-- #docs -->
+
+    <owl:Class rdf:about="#docs">
+        <rdfs:subClassOf rdf:resource="#Contemporary-Dance-AI"/>
+    </owl:Class>
+    
+
+
+    <!-- #generator -->
+
+    <owl:Class rdf:about="#generator">
+        <rdfs:subClassOf rdf:resource="#graphics"/>
+    </owl:Class>
+    
+
+
+    <!-- #graphics -->
+
+    <owl:Class rdf:about="#graphics">
+        <rdfs:subClassOf rdf:resource="#Contemporary-Dance-AI"/>
+    </owl:Class>
+    
+
+
+    <!-- #logs -->
+
+    <owl:Class rdf:about="#logs">
+        <rdfs:subClassOf rdf:resource="#Contemporary-Dance-AI"/>
+    </owl:Class>
+    
+
+
+    <!-- #motion_builder -->
+
+    <owl:Class rdf:about="#motion_builder">
+        <rdfs:subClassOf rdf:resource="#graphics"/>
+    </owl:Class>
+    
+
+
+    <!-- #src -->
+
+    <owl:Class rdf:about="#src">
+        <rdfs:subClassOf rdf:resource="#Contemporary-Dance-AI"/>
+    </owl:Class>
+    
+
+
+    <!-- content#motion_builder -->
+
+    <owl:Class rdf:about="content#motion_builder">
+        <rdfs:subClassOf rdf:resource="#content"/>
+    </owl:Class>
+    
+
+
+    <!-- src#classifier -->
+
+    <owl:Class rdf:about="src#classifier">
+        <rdfs:subClassOf rdf:resource="#src"/>
+    </owl:Class>
+    
+
+
+    <!-- src#generator -->
+
+    <owl:Class rdf:about="src#generator">
+        <rdfs:subClassOf rdf:resource="#src"/>
+    </owl:Class>
+    
+
+
+    <!-- src#lib -->
+
+    <owl:Class rdf:about="src#lib">
+        <rdfs:subClassOf rdf:resource="#src"/>
+    </owl:Class>
+    
+
+
+    <!-- src#scripts -->
+
+    <owl:Class rdf:about="src#scripts">
+        <rdfs:subClassOf rdf:resource="src#utils"/>
+    </owl:Class>
+    
+
+
+    <!-- src#testing_files -->
+
+    <owl:Class rdf:about="src#testing_files">
+        <rdfs:subClassOf rdf:resource="src#utils"/>
+    </owl:Class>
+    
+
+
+    <!-- src#utils -->
+
+    <owl:Class rdf:about="src#utils">
+        <rdfs:subClassOf rdf:resource="#src"/>
+    </owl:Class>
+    
+
+
+    <!-- 
+    ///////////////////////////////////////////////////////////////////////////////////////
+    //
+    // Individuals
+    //
+    ///////////////////////////////////////////////////////////////////////////////////////
+     -->
+
+    
+
+
+    <!-- src#dance_labels.json -->
+
+    <owl:NamedIndividual rdf:about="src#dance_labels.json">
+        <rdf:type rdf:resource="#logs"/>
+    </owl:NamedIndividual>
+</rdf:RDF>
+
+
+
+<!-- Generated by the OWL API (version 4.5.9.2019-02-01T07:24:44Z) https://github.com/owlcs/owlapi -->
+

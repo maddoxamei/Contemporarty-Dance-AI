@@ -182,7 +182,7 @@ def main():
     t_take = import_dances([t_pose])
     import_dances(mocab_to_import)
     hip_camera = Camera('BVH:Hips', 400, 1.5)
-    Floor(os.path.abspath(os.path.join( content_path,"tiled_floor.jpg" )), "tiled_floor")
+    Floor(os.path.abspath(os.path.join( data_path,"tiled_floor.jpg" )), "tiled_floor")
     renderer = Render_Options(1, render_takes, rendered_content_path, render_content, content_tag)
 
     scene = FBSystem().Scene

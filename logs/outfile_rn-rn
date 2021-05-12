@@ -1,0 +1,85 @@
+Decision Tree
+Training and Evaluation --- -553.8792369365692 seconds ---
+              precision    recall  f1-score   support
+
+          -1       0.54      0.68      0.60      2689
+           0       0.53      0.34      0.41      1512
+           1       0.45      0.42      0.43      1759
+
+    accuracy                           0.51      5960
+   macro avg       0.51      0.48      0.48      5960
+weighted avg       0.51      0.51      0.50      5960
+
+Confusion Matrix:
+[[1818  257  614]
+ [ 704  515  293]
+ [ 828  198  733]]
+Accuracy:	0.5144295302013423
+Random Forest Classifier
+Training and Evaluation --- -763.0343742370605 seconds ---
+              precision    recall  f1-score   support
+
+          -1       0.58      0.91      0.71      2689
+           0       0.88      0.25      0.39      1512
+           1       0.65      0.47      0.55      1759
+
+    accuracy                           0.61      5960
+   macro avg       0.70      0.55      0.55      5960
+weighted avg       0.67      0.61      0.58      5960
+
+Confusion Matrix:
+[[2444   43  202]
+ [ 877  385  250]
+ [ 918   10  831]]
+Accuracy:	0.6140939597315436
+Neural Network
+Training and Evaluation --- -8491.543966293335 seconds ---
+              precision    recall  f1-score   support
+
+          -1       0.55      0.77      0.64      2689
+           0       0.63      0.36      0.45      1512
+           1       0.49      0.37      0.42      1759
+
+    accuracy                           0.55      5960
+   macro avg       0.55      0.50      0.50      5960
+weighted avg       0.55      0.55      0.53      5960
+
+Confusion Matrix:
+[[2064  198  427]
+ [ 722  537  253]
+ [ 988  120  651]]
+Accuracy:	0.5456375838926174
+Support Vector Machine
+Training and Evaluation --- -124161.24788355827 seconds ---
+              precision    recall  f1-score   support
+
+          -1       0.50      0.99      0.66      2689
+           0       1.00      0.22      0.36      1512
+           1       0.91      0.13      0.22      1759
+
+    accuracy                           0.54      5960
+   macro avg       0.80      0.45      0.42      5960
+weighted avg       0.75      0.54      0.46      5960
+
+Confusion Matrix:
+[[2672    0   17]
+ [1175  333    4]
+ [1536    0  223]]
+Accuracy: 0.5416107382550336
+K Nearest Neighbors
+Training and Evaluation --- -5055.363399028778 seconds ---
+              precision    recall  f1-score   support
+
+          -1       0.44      0.69      0.54      2689
+           0       0.55      0.17      0.26      1512
+           1       0.27      0.21      0.23      1759
+
+    accuracy                           0.41      5960
+   macro avg       0.42      0.35      0.34      5960
+weighted avg       0.42      0.41      0.38      5960
+
+Confusion Matrix:
+[[1851  121  717]
+ [ 999  253  260]
+ [1311   85  363]]
+Accuracy: 0.4139261744966443
