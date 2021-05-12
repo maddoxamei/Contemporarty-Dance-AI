@@ -10,7 +10,7 @@ def post_save(model, os_path, contents_manager):
         if model['type'] != 'notebook':
                 return # only do this for notebooks
         d, fname = os.path.split(os_path)
-        check_call(['jupyter', 'nbconvert', fname, '--to', 'script', '--output-dir', '/Akamai/MLDance/Contemporarty-Dance-AI/src/scripts'], cwd=d)
+        check_call(['jupyter', 'nbconvert', fname, '--to', 'script', '--output-dir', '/Akamai/MLDance/backups/scripts'], cwd=d)
 
 c.FileContentsManager.post_save_hook = post_save
 # Configuration file for jupyter-notebook.

@@ -1,0 +1,3 @@
+All Diagrams were run through the simulator to ensure unique coloration.
+
+https://www.color-blindness.com/coblis-color-blindness-simulator/
