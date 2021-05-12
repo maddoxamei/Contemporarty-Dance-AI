@@ -18,6 +18,8 @@ peep_hole = False
 standardize_positions = True
 relativize_positions = False
 convensional_method = True #whether or not the rotational dataset should be standardized by convensional methods (val-mean)/std vs. val/180
+pos_pre_processes = "o"
+rot_pre_processes = "o"
 
 """ 
 ======================================
@@ -63,7 +65,7 @@ n_features = 165 #number of columns in the input dimension
 frames = 500 #number of frames the model should generate
 
 batch_size = 32 #number of samples trained before performing one step of gradient update for the loss function (default is stochastic gradient descent)
-look_back = 50 #how many frames will be used as a history for prediction
+look_back = 45 #how many frames will be used as a history for prediction
 offset = 1 #how many frames in the future is the prediction going to occur at
 forecast = 1 #how many frames will be predicted
 sample_increment = 1 #number of frames between each sample
@@ -84,14 +86,15 @@ _extras_dir = os.path.dirname(_base_dir)
 
 csv_data_dir = os.path.join(_extras_dir, r"data/CSV/Raw") #directory to the csv representation of the dances
 np_data_dir = os.path.join(_extras_dir, r"data/Numpy") #directory to the numpy representation of the dances
-logs_dir = os.path.join(_base_dir, "logs") #general output directory
-graphics_dir = os.path.join(_base_dir, "graphics")
+content_dir = os.path.join(_base_dir, "content") #directory for information needed by or produced by the AI choreographer during runtime, minus the saved logs
+logs_dir = os.path.join(_base_dir, "logs") #directory for copies of the AI choreographer runtime information, including but not limited to current status, completion time for various sub-tasks, etc.
+graphics_dir = os.path.join(content_dir, "graphics")
 hierarchy_dir = os.path.join(csv_data_dir, "hierarchy")
 """
     ***** Identifiers *****
 """
 _model_identifier = "units-{}_timesteps-{}".format(units, look_back) #model-specific string for use in creating readily identifiable filenames
-_data_identifier = "lb-{}_o-{}_f-{}_si-{}_sm-{}_rp-{}_sp-{}_va-{}".format(look_back, offset,forecast, sample_increment, convensional_method, relativize_positions, standardize_positions, vertical_spacial_axis) #data-specific string for use in creating readily identifiable filenames
+_data_identifier = "lb-{}_o-{}_f-{}_si-{}_va-{}_pp-{}_rp-{}".format(look_back, offset,forecast, sample_increment, vertical_spacial_axis, pos_pre_processes, rot_pre_processes) #data-specific string for use in creating readily identifiable filenames
 _split_identifier = "ts-{}_vs-{}_es-{}".format(training_split, validation_split, evaluation_split) #split-specific string for use in creating readily identifiable filenames
 _full_identifier = _model_identifier+"_"+_data_identifier+"_"+_split_identifier #string for use in creating readily identifiable filenames 
 _checkpoint_extension = ".h5" #file type to save the model weights as, either tensorflow's default (.ckpt) or keras's default (.h5) 
@@ -104,8 +107,8 @@ _generated_bvh_filename = "{}-lb_".format(look_back)
 if(relativize_positions):
     _generated_bvh_filename += "relativized_"
 if(standardize_positions):
-    _generated_bvh_filename += "standardized_"
-_generated_bvh_filename += "method:{}_shuffled:{}".format(convensional_method, shuffle_data)
+    _generated_bvh_filename += "standardized-{}_".format(convensional_method)
+_generated_bvh_filename += "_shuffled-{}".format(shuffle_data)
 """
     ***** Save Locations *****
 """
@@ -119,10 +122,15 @@ weights_file = os.path.join(logs_save_dir, _weights_filename)
 architecture_file = os.path.join(logs_save_dir, "model_{}_architecture_".format(_model_type)+_model_identifier+".json")
 model_file = os.path.join(logs_save_dir, "model_{}_full_".format(_model_type)+_full_identifier+".h5")
 
+training_filepath = os.path.join(np_save_dir, "_comprehensive_training_"+_data_identifier+"_ts-{}".format(training_split))
+validation_filepath = os.path.join(np_save_dir, "_comprehensive_validation_"+_data_identifier+"_vs-{}".format(validation_split))
 evaluation_filepath = os.path.join(np_save_dir, "_comprehensive_evaluation_"+_data_identifier+"_es-{}".format(evaluation_split))
 history_train_file = os.path.join(logs_save_dir, "history_train_"+_full_identifier+".json")
 history_eval_file = os.path.join(logs_save_dir, "history_eval_"+_full_identifier+".json")
-standardization_json = os.path.join(logs_dir,'standardization_metrics.json')
+processing_json = os.path.join(content_dir,"processing_metrics.json")
+
+
+
 label_json = os.path.join(logs_dir, "dance_labels.json")
 
 generated_bvh_file = os.path.join(logs_save_dir, _generated_bvh_filename+".bvh")

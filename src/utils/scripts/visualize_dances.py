@@ -4,7 +4,7 @@ import os, glob
 from math import sin, cos, radians
 
 model_to_load = "Michelle"
-render_takes = ["Andria_Satisfied_v2"] #Both determines which mocab is loaded and which takes are rendered
+render_takes = ["AI"] #Both determines which mocab is loaded and which takes are rendered
 render_content = True
 content_tag = None
 
@@ -16,6 +16,7 @@ rendered_content_path = os.path.join(content_path, "renders")
 character_model = os.path.join(character_model_path, model_to_load + ".fbx")
 motion_capture_data = sorted([f for f in glob.glob(motion_capture_path+r"\*") if f.endswith(".fbx") or f.endswith(".bvh")], key=str.upper)
 t_pose = motion_capture_data.pop()
+mocab_to_import = [m for m in motion_capture_data for t in render_takes if t.split('_')[0] in m.split('\\')[-1]]
 
 class Camera():
     def __init__(self, obj_to_aim_at, distance, height, show_grid = False):
@@ -132,27 +133,19 @@ class Render_Options():
             FBSystem().CurrentTake = scene.Takes[index]
             if not os.path.exists(self.output_dir):
                 os.makedirs(self.output_dir)
-            filename = FBSystem().CurrentTake.Name.split('-')[0] + self.label_name + self.render_type
+            filename = FBSystem().CurrentTake.Name + self.label_name + self.render_type
             self.options.OutputFileName = os.path.join(self.output_dir, filename)
             self.options.TimeSpan = FBSystem().CurrentTake.LocalTimeSpan
-            self._setCameraLocation(camera, object_to_aim_at)
+            '''if not FBSystem().Scene.Renderer.IsCameraSwitcherInPane(0):
+                                                    FBSystem().Scene.Renderer.SetCameraSwitcherInPane( 0, True )
+                                                FBSystem().Scene.Renderer.SetCameraInPane( camera.camera, 0 )
+            FBCameraSwitcher().CurrentCamera.Name = camera.camera'''
             scene.Renderer.UseCameraSwitcher = True
-            #SetCameraSwitcherInPane
             FBCameraSwitcher().CurrentCamera = camera.camera
+            self._setCameraLocation(camera, object_to_aim_at)
             return FBApplication().FileRender(self.options)
         else:
             return False
-
-def create_new_application():
-    # Get an instance of FBApplication and clear the scene with FileNew().
-    app = FBApplication()
-    # Get a reference to the underlying system properties of MotionBuilder.
-    system = FBSystem()
-
-    # Get a reference to the current MotionBuilder scene
-    scene = system.Scene
-    app.FileNew()
-    return app, system. scene
 
 def deselectComponents():
     for component in FBSystem().Scene.Components:
@@ -176,19 +169,18 @@ def characterizeModel(rootNamespace):
     #character.ActiveInput = True
     return character
 
-def import_Dances(mocab_filename_list):
-    import_options = FBMotionFileOptions(FBStringList('~'.join([f for f in mocab_filename_list if 'T-Pose' not in f])))
-    import_options.CreateInsteadOfMerge = False
+def import_dances(mocab_files):
+    import_options = FBMotionFileOptions(FBStringList('~'.join(mocab_files)))
+    import_options.CreateInsteadOfMerge = True #does opposite now?
     import_options.CreateUnmatchedModels = True
     import_options.ImportDOF = True
     FBApplication().FileImportWithOptions(import_options)
-
-def import_T_Pose(init_pose):
-    import_Dances([init_pose])
+    return FBSystem().CurrentTake
 
 def main():
     FBApplication().FileNew()
-    import_Dances([m for m in motion_capture_data for t in render_takes if t.split('_')[0] in m])
+    t_take = import_dances([t_pose])
+    import_dances(mocab_to_import)
     hip_camera = Camera('BVH:Hips', 400, 1.5)
     Floor(os.path.abspath(os.path.join( content_path,"tiled_floor.jpg" )), "tiled_floor")
     renderer = Render_Options(1, render_takes, rendered_content_path, render_content, content_tag)
@@ -197,7 +189,7 @@ def main():
     if model_to_load:
         renderer.options.ViewingMode = FBVideoRenderViewingMode().FBViewingModeModelsOnly
         FBApplication().FileMerge(character_model, False) 
-        import_T_Pose(t_pose)
+        FBSystem().CurrentTake = t_take
         mixamo = characterizeModel('mixamorig')
         mixamo.ActiveInput = True
         characterizeModel('BVH')

@@ -86,8 +86,9 @@ _extras_dir = os.path.dirname(_base_dir)
 
 csv_data_dir = os.path.join(_extras_dir, r"data/CSV/Raw") #directory to the csv representation of the dances
 np_data_dir = os.path.join(_extras_dir, r"data/Numpy") #directory to the numpy representation of the dances
-logs_dir = os.path.join(_base_dir, "logs") #general output directory
-graphics_dir = os.path.join(_base_dir, "graphics")
+content_dir = os.path.join(_base_dir, "content") #directory for information needed by or produced by the AI choreographer during runtime, minus the saved logs
+logs_dir = os.path.join(_base_dir, "logs") #directory for copies of the AI choreographer runtime information, including but not limited to current status, completion time for various sub-tasks, etc.
+graphics_dir = os.path.join(content_dir, "graphics")
 hierarchy_dir = os.path.join(csv_data_dir, "hierarchy")
 """
     ***** Identifiers *****
@@ -126,7 +127,7 @@ validation_filepath = os.path.join(np_save_dir, "_comprehensive_validation_"+_da
 evaluation_filepath = os.path.join(np_save_dir, "_comprehensive_evaluation_"+_data_identifier+"_es-{}".format(evaluation_split))
 history_train_file = os.path.join(logs_save_dir, "history_train_"+_full_identifier+".json")
 history_eval_file = os.path.join(logs_save_dir, "history_eval_"+_full_identifier+".json")
-processing_json = os.path.join(logs_dir,"processing_metrics.json")
+processing_json = os.path.join(content_dir,"processing_metrics.json")
 
 
 

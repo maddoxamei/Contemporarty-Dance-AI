@@ -103,9 +103,7 @@ def train_model(model, out_file=sys.stdout):
     
     write("Fetching and Agregating Training Data ...") #sys.stdout
     start_time = time.time()
-    for dance in progressbar(dances, "Progress: "):
-        csv_filename, np_filename = get_save_path(dance)
-        train_X, train_Y, validate_X, validate_Y, evaluation_X, evaluation_Y, train_Class_Y, validate_Class_Y, evaluation_Class_Y = get_comprehensive_data()
+    train_X, train_Y, validate_X, validate_Y, evaluation_X, evaluation_Y, train_Class_Y, validate_Class_Y, evaluation_Class_Y = get_comprehensive_data()
         
     history = model.fit(train_X, train_Y, 
                         batch_size = batch_size, 

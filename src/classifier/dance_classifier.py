@@ -142,8 +142,6 @@ def run_model(classifier, out_file=sys.stdout):
     :return: the class containing the training metric information, the trained model, and the comprehensive evaluation data
     :type tuple
     """
-    dances = get_unique_dance_names(csv_data_dir)
-    csv_filename, np_filename = get_save_path(dances[0])
     train_X, train_Y, validate_X, validate_Y, evaluation_X, evaluation_Y, train_Class_Y, validate_Class_Y, evaluation_Class_Y = get_comprehensive_data()
     
     train_X = pd.DataFrame(train_X.reshape((train_X.shape[0], -1))).fillna(0)
