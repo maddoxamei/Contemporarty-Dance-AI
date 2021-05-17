@@ -43,7 +43,23 @@ Training and Evaluation --- -2065.0563542842865 seconds ---
     accuracy                           0.60      5960
    macro avg       0.63      0.55      0.56      5960
 weighted avg       0.62      0.60      0.58      5960
+Support Vector Machine
+Training and Evaluation --- -42579.94497656822 seconds ---
+              precision    recall  f1-score   support
 
+          -1       0.54      0.88      0.67      2689
+           0       0.68      0.38      0.48      1512
+           1       0.57      0.23      0.33      1759
+
+    accuracy                           0.56      5960
+   macro avg       0.60      0.50      0.50      5960
+weighted avg       0.59      0.56      0.52      5960
+
+Confusion Matrix:
+[[2376  176  137]
+ [ 777  567  168]
+ [1262   86  411]]
+Accuracy: 0.562751677852349
 Confusion Matrix:
 [[2171  112  406]
  [ 740  554  218]

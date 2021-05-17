@@ -49,6 +49,23 @@ Confusion Matrix:
  [  27 1485    0]
  [ 305   61 1393]]
 Accuracy:	0.9238255033557047
+Support Vector Machine
+Training and Evaluation --- -35435.29647922516 seconds ---
+              precision    recall  f1-score   support
+
+          -1       0.73      0.98      0.83      2689
+           0       0.99      0.84      0.91      1512
+           1       0.91      0.56      0.69      1759
+
+    accuracy                           0.82      5960
+   macro avg       0.88      0.79      0.81      5960
+weighted avg       0.85      0.82      0.81      5960
+
+Confusion Matrix:
+[[2627    7   55]
+ [ 206 1264   42]
+ [ 775    0  984]]
+Accuracy: 0.8179530201342282
 
 K Nearest Neighbors
 Training and Evaluation --- -275.5179784297943 seconds ---
