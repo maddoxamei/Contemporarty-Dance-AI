@@ -68,7 +68,7 @@ def aggregate_data(out_file=sys.stdout):
     print("Saved to", training_filepath+"_Class_Y")
     
 def get_comprehensive_data():
-    if not (os.path.exists(training_filepath+"*.npy")):
+    if not (os.path.exists(training_filepath+"_X.npy") and os.path.exists(training_filepath+"_Y.npy") and os.path.exists(validation_filepath+"_X.npy") and os.path.exists(validation_filepath+"_Y.npy") and os.path.exists(evaluation_filepath+"_X.npy") and os.path.exists(evaluation_filepath+"_Y.npy") andos.path.exists(training_filepath+"_Class_Y.npy") and os.path.exists(validation_filepath+"_Class_Y.npy") and os.path.exists(evaluation_filepath+"_Class_Y.npy")):
         aggregate_data()
     return np.load(training_filepath+"_X.npy"), np.load(training_filepath+"_Y.npy"), np.load(validation_filepath+"_X.npy"), np.load(validation_filepath+"_Y.npy"), np.load(evaluation_filepath+"_X.npy"), np.load(evaluation_filepath+"_Y.npy"),np.load(training_filepath+"_Class_Y.npy"), np.load(validation_filepath+"_Class_Y.npy"), np.load(evaluation_filepath+"_Class_Y.npy")
 
