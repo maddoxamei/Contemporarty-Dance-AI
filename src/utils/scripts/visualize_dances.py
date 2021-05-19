@@ -9,13 +9,14 @@ render_content = True
 content_tag = None
 
 content_path = os.path.join(r"C:\Users\maddo\Documents",r"GitHub\Contemporarty-Dance-AI\content\motion_builder")
-character_model_path = content_path
+data_path = os.path.join(r"C:\Users\maddo\Documents",r"GitHub\Contemporarty-Dance-AI\data\motion_builder")
+character_model_path = data_path
 motion_capture_path = os.path.join(content_path, "motion_capture")
 rendered_content_path = os.path.join(content_path, "renders")
 
 character_model = os.path.join(character_model_path, model_to_load + ".fbx")
-motion_capture_data = sorted([f for f in glob.glob(motion_capture_path+r"\*") if f.endswith(".fbx") or f.endswith(".bvh")], key=str.upper)
-t_pose = motion_capture_data.pop()
+motion_capture_data = sorted([f for f in glob.glob(motion_capture_path+r"\*") if f.endswith(".bvh")], key=str.upper)
+t_pose = os.path.join(data_path, "_T-Pose.fbx")
 mocab_to_import = [m for m in motion_capture_data for t in render_takes if t.split('_')[0] in m.split('\\')[-1]]
 
 class Camera():
